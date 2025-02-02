@@ -83,12 +83,3 @@ pub_assist-main/
 │── python_files/
 │   ├── beautify.py
 ```
-
-## **Contributing**
-- Fork the repository.
-- Create a feature branch.
-- Submit a pull request.
-
-## **License**
-This project is licensed under the MIT License (if applicable).
-
