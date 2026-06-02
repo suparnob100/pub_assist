@@ -78,6 +78,12 @@ def _err(msg: str, code: int = 400):
     return JSONResponse({"status": "error", "error": msg}, status_code=code)
 
 
+def _user_path(path: str | None):
+    if not path:
+        return path
+    return os.path.expandvars(os.path.expanduser(path))
+
+
 # ── static + root ─────────────────────────────────────────────────────────────
 
 app.mount("/static", StaticFiles(directory=str(Path(__file__).parent / "static")), name="static")
@@ -108,7 +114,7 @@ async def api_open_folder(req: OpenFolderRequest):
     if not raw:
         return _err("No path provided.")
 
-    p = Path(raw)
+    p = Path(_user_path(raw))
     if not p.is_absolute():
         p = Path(__file__).parent / p
     p = p.resolve()
@@ -152,7 +158,7 @@ class NewProjectRequest(BaseModel):
 async def api_create_project(req: NewProjectRequest):
     try:
         result = await _run_in_pool(
-            create_project, req.project_dir, req.sections or None, req.appendices or None, req.zip_result
+            create_project, _user_path(req.project_dir), req.sections or None, req.appendices or None, req.zip_result
         )
         return _ok(result)
     except Exception as exc:
@@ -169,7 +175,7 @@ class FolderFileRequest(BaseModel):
 @app.post("/api/modularize")
 async def api_modularize(req: FolderFileRequest):
     try:
-        result = await _run_in_pool(modularize, req.input_folder, req.source_file)
+        result = await _run_in_pool(modularize, _user_path(req.input_folder), req.source_file)
         return _ok(result)
     except Exception as exc:
         return _err(str(exc))
@@ -185,7 +191,7 @@ class OneSentenceRequest(BaseModel):
 @app.post("/api/one-sentence")
 async def api_one_sentence(req: OneSentenceRequest):
     try:
-        result = await _run_in_pool(one_sentence_files, req.root_dir, req.output_dir or None)
+        result = await _run_in_pool(one_sentence_files, _user_path(req.root_dir), _user_path(req.output_dir) if req.output_dir else None)
         return _ok(result)
     except Exception as exc:
         return _err(str(exc))
@@ -201,7 +207,7 @@ class ReassembleRequest(BaseModel):
 @app.post("/api/reassemble")
 async def api_reassemble(req: ReassembleRequest):
     try:
-        result = await _run_in_pool(reassemble, req.input_folder, req.filename)
+        result = await _run_in_pool(reassemble, _user_path(req.input_folder), req.filename)
         return _ok(result)
     except Exception as exc:
         return _err(str(exc))
@@ -217,7 +223,7 @@ class CleanRequest(BaseModel):
 @app.post("/api/clean")
 async def api_clean(req: CleanRequest):
     try:
-        result = await _run_in_pool(clean_latex, req.latex_file, req.keep_bib)
+        result = await _run_in_pool(clean_latex, _user_path(req.latex_file), req.keep_bib)
         return _ok(result)
     except Exception as exc:
         return _err(str(exc))
@@ -247,7 +253,7 @@ async def api_review_floats(req: ReviewFloatsRequest):
 @app.post("/api/collect-figures")
 async def api_collect_figures(req: FolderFileRequest):
     try:
-        result = await _run_in_pool(collect_figures, req.input_folder, req.source_file)
+        result = await _run_in_pool(collect_figures, _user_path(req.input_folder), req.source_file)
         return _ok(result)
     except Exception as exc:
         return _err(str(exc))
@@ -266,7 +272,7 @@ class BeautifyRequest(BaseModel):
 async def api_beautify(req: BeautifyRequest):
     try:
         result = await _run_in_pool(
-            beautify_files, req.root_dir, req.input_file, req.root_dir, req.comment_column, req.indent_size
+            beautify_files, _user_path(req.root_dir), req.input_file, _user_path(req.root_dir), req.comment_column, req.indent_size
         )
         return _ok({"message": "Beautification complete.", "root_dir": req.root_dir, "input_file": req.input_file})
     except Exception as exc:
@@ -295,7 +301,7 @@ async def api_reviewer_template(req: ReviewerTemplateRequest):
             build_template,
             req.manuscript_title, req.journal_name, req.submission_id,
             req.corresponding_author_email, req.authors, affils, counts,
-            req.output_tex_file,
+            _user_path(req.output_tex_file),
         )
         return _ok(result)
     except Exception as exc:
@@ -308,7 +314,7 @@ class LatexdiffRequest(BaseModel):
     old_project: str
     new_project: str
     main_tex: str = "manuscript.tex"
-    bib: str | None = "bibtex"
+    bib: str | None = None
     latexdiff_engine: str = "online"
     use_docker: bool = False
     confirm_online_upload: bool = True
@@ -335,8 +341,8 @@ async def api_latexdiff(req: LatexdiffRequest):
 
             ws = await _run_in_pool(
                 prepare_latexdiff_workspace,
-                req.old_project, req.new_project, req.main_tex,
-                req.workspace_dir, bib, req.style,
+                _user_path(req.old_project), _user_path(req.new_project), req.main_tex,
+                _user_path(req.workspace_dir), bib, req.style,
             )
             if engine == "docker":
                 docker_use_cmd = os.name == "nt" and shutil.which("cmd") is not None
@@ -390,7 +396,7 @@ async def api_doi2bib(req: Doi2BibRequest):
             entries, failures = await _run_in_pool(
                 generate_bibtex_entries, req.dois, req.timeout, req.contact_email, req.pause_seconds
             )
-            out_file = req.output_bib_file.strip() or "references_from_dois.bib"
+            out_file = _user_path(req.output_bib_file.strip() or "references_from_dois.bib")
             output_path = await _run_in_pool(write_bibtex_file, entries, out_file, req.append)
             _finish_job(jid, {
                 "output_file": output_path,
@@ -417,7 +423,7 @@ async def api_copy_styles(req: CopyStylesRequest):
     try:
         result = await _run_in_pool(
             find_and_copy_latex_style_files,
-            req.latex_file, req.output_folder, req.miktex_path or None,
+            _user_path(req.latex_file), _user_path(req.output_folder), _user_path(req.miktex_path) if req.miktex_path else None,
         )
         return _ok(result)
     except Exception as exc:
@@ -435,7 +441,7 @@ class SubmissionDocsRequest(BaseModel):
 async def api_submission_docs(req: SubmissionDocsRequest):
     try:
         written = await _run_in_pool(
-            generate_submission_documents, req.config, req.output_folder
+            generate_submission_documents, req.config, _user_path(req.output_folder)
         )
         return _ok({"files": [str(p) for p in written]})
     except Exception as exc:

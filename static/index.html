@@ -63,7 +63,7 @@
       <div class="card-body">
         <div class="form-row">
           <label>Project folder path</label>
-          <input type="text" id="create-dir" placeholder="e.g. C:\Projects\MyPaper">
+          <input type="text" id="create-dir" placeholder="e.g. /path/to/MyPaper or C:\Projects\MyPaper">
         </div>
         <div class="form-row">
           <label>Sections <span class="hint">(comma-separated, leave blank for defaults)</span></label>
@@ -91,7 +91,7 @@
       <div class="card-body">
         <div class="form-row">
           <label>Project folder</label>
-          <input type="text" id="mod-folder" placeholder="C:\Projects\MyPaper">
+          <input type="text" id="mod-folder" placeholder="/path/to/MyPaper">
         </div>
         <div class="form-row">
           <label>Main .tex filename</label>
@@ -111,7 +111,7 @@
       <div class="card-body">
         <div class="form-row">
           <label>Folder containing .tex files</label>
-          <input type="text" id="os-dir" placeholder="C:\Projects\MyPaper">
+          <input type="text" id="os-dir" placeholder="/path/to/MyPaper">
         </div>
         <div class="form-row">
           <label>Output folder <span class="hint">(blank = same folder)</span></label>
@@ -132,7 +132,7 @@
       <div class="card-body">
         <div class="form-row">
           <label>Project folder</label>
-          <input type="text" id="re-folder" placeholder="C:\Projects\MyPaper">
+          <input type="text" id="re-folder" placeholder="/path/to/MyPaper">
         </div>
         <div class="form-row">
           <label>Main .tex filename</label>
@@ -153,7 +153,7 @@
       <div class="card-body">
         <div class="form-row">
           <label>LaTeX file</label>
-          <input type="text" id="clean-file" placeholder="C:\Projects\MyPaper\Manuscript_main.tex">
+          <input type="text" id="clean-file" placeholder="/path/to/MyPaper/Manuscript_main.tex">
         </div>
         <div class="form-row-check">
           <input type="checkbox" id="clean-keepbib" checked>
@@ -175,7 +175,7 @@
       <div class="card-body">
         <div class="form-row">
           <label>Project folder</label>
-          <input type="text" id="fl-folder" placeholder="C:\Projects\MyPaper">
+          <input type="text" id="fl-folder" placeholder="/path/to/MyPaper">
         </div>
         <div class="form-row">
           <label>.tex filename</label>
@@ -200,7 +200,7 @@
       <div class="card-body">
         <div class="form-row">
           <label>Project folder</label>
-          <input type="text" id="fig-folder" placeholder="C:\Projects\MyPaper">
+          <input type="text" id="fig-folder" placeholder="/path/to/MyPaper">
         </div>
         <div class="form-row">
           <label>.tex filename</label>
@@ -221,7 +221,7 @@
       <div class="card-body">
         <div class="form-row">
           <label>Project folder</label>
-          <input type="text" id="bea-folder" placeholder="C:\Projects\MyPaper">
+          <input type="text" id="bea-folder" placeholder="/path/to/MyPaper">
         </div>
         <div class="form-row">
           <label>.tex filename</label>
@@ -299,11 +299,11 @@
       <div class="card-body">
         <div class="form-row">
           <label>Old project folder or .zip</label>
-          <input type="text" id="ld-old" placeholder="C:\Projects\old">
+          <input type="text" id="ld-old" placeholder="/path/to/old or /path/to/old.zip">
         </div>
         <div class="form-row">
           <label>New project folder or .zip</label>
-          <input type="text" id="ld-new" placeholder="C:\Projects\new">
+          <input type="text" id="ld-new" placeholder="/path/to/new or /path/to/new.zip">
         </div>
         <div class="form-row">
           <label>Main .tex filename</label>
@@ -376,20 +376,20 @@
     <section class="tool-card" id="step-copystyles">
       <div class="card-header">
         <span class="card-title">Copy Style Files</span>
-        <span class="card-desc">Copy required <code>.sty</code> files from MiKTeX into the project folder.</span>
+        <span class="card-desc">Copy required <code>.sty</code> files from MiKTeX, TeX Live, or MacTeX into the project folder.</span>
       </div>
       <div class="card-body">
         <div class="form-row">
           <label>Main .tex file</label>
-          <input type="text" id="cs-file" placeholder="C:\Projects\MyPaper\Manuscript_main.tex">
+          <input type="text" id="cs-file" placeholder="/path/to/MyPaper/Manuscript_main.tex">
         </div>
         <div class="form-row">
           <label>Output folder</label>
-          <input type="text" id="cs-out" placeholder="C:\Projects\MyPaper\packages_used">
+          <input type="text" id="cs-out" placeholder="/path/to/MyPaper/packages_used">
         </div>
         <div class="form-row">
-          <label>MiKTeX latex/ path <span class="hint">(blank = auto-detect)</span></label>
-          <input type="text" id="cs-miktex" placeholder="C:\Users\you\AppData\Local\Programs\MiKTeX\tex\latex">
+          <label>TeX latex/ path <span class="hint">(blank = auto-detect via kpsewhich or common TeX roots)</span></label>
+          <input type="text" id="cs-miktex" placeholder="/usr/share/texlive/texmf-dist/tex/latex">
         </div>
         <button class="btn-run" onclick="runCopyStyles()">Copy Styles</button>
         <div class="result-box" id="cs-result"></div>

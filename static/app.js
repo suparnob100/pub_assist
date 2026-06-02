@@ -64,7 +64,7 @@ const PATH_FIELDS = {
 };
 
 function isAbsolutePath(v) {
-  return /^([a-zA-Z]:[\\/]|[\\/])/.test(v);
+  return /^([a-zA-Z]:[\\/]|[\\/]|~([\\/]|$))/.test(v);
 }
 
 async function openPath(id, base) {

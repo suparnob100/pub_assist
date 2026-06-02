@@ -14,7 +14,7 @@ Pub Assist also comes with a local web app that enables the complete workflow th
 - **Figure/floats organization:** Review and gather all figures used in one folder.
 - **Reviewer response template:** Create a structured response file in LaTeX.
 - **DOI to BibTeX:** Retrieve BibTeX entries automatically from DOIs.
-- **LaTeX diff PDF:** Visually compare manuscript versions using MiKTeX/latexdiff locally, Docker, or via an online service.
+- **LaTeX diff PDF:** Visually compare manuscript versions using MiKTeX, TeX Live, or MacTeX locally; Docker; or an online service.
 - **Submission Word Docs:** Auto-generate `.docx` files required for journal submission (cover letter, highlights, declarations, etc.) from project inputs.
 
 ## Workflow Notebooks
@@ -66,9 +66,9 @@ The following notebooks guide you through the preparation workflow:
 2. Install Python 3.x and Jupyter.
 3. Open the desired notebook and fill out the user input cell near the top.
 4. Run each cell in order.
-5. For `Step_8_generate_latexdiff_report.ipynb`, install MiKTeX with `pdflatex`. For local diffing, ensure `latexdiff` and `bibtex`/`biber` utilities are available.
-6. If MiKTeX reports a missing script engine `'perl'`, install Perl (e.g., Strawberry Perl on Windows).
-7. Optionally, install Docker Desktop for Docker-based diffing.
+5. For `Step_8_generate_latexdiff_report.ipynb`, install a TeX distribution with `pdflatex`. Use MiKTeX on Windows, TeX Live on Linux, or MacTeX/TeX Live on macOS. For local diffing, ensure `latexdiff` and `bibtex`/`biber` utilities are available.
+6. If MiKTeX reports a missing script engine `'perl'`, install Perl (e.g., Strawberry Perl on Windows). TeX Live/MacTeX usually include the needed Perl-based tools.
+7. Optionally, install Docker Desktop on Windows/macOS or Docker Engine on Linux for Docker-based diffing.
 8. For Word document generation, make sure `python-docx` is installed.
 
 ## Local Web App
@@ -80,6 +80,7 @@ App layout:
 app.py
 static/
 start_app.bat
+start_app.sh
 requirements_app.txt
 ```
 
@@ -87,16 +88,20 @@ requirements_app.txt
 
 Install dependencies:
 ```bash
-pip install -r requirements_app.txt
+python -m pip install -r requirements_app.txt
 ```
 
 On Windows:
 ```bat
 start_app.bat
 ```
+On macOS/Linux:
+```bash
+sh start_app.sh
+```
 Or start manually:
 ```bash
-uvicorn app:app --reload --host 127.0.0.1 --port 7654
+python -m uvicorn app:app --reload --host 127.0.0.1 --port 7654
 ```
 
 Browse to [http://127.0.0.1:7654](http://127.0.0.1:7654) for the app UI, which covers the entire workflow: project generation, modularization, formatting, float/fugure review, beautification, response template, LaTeX diff generation, DOI-to-BibTeX, etc.
@@ -104,7 +109,7 @@ Browse to [http://127.0.0.1:7654](http://127.0.0.1:7654) for the app UI, which c
 **LaTeX Diff supports:**
 ```python
 latexdiff_engine = "online"   # Uses online form + local pdflatex
-latexdiff_engine = "local"    # Uses local MiKTeX/latexdiff
+latexdiff_engine = "local"    # Uses local MiKTeX/TeX Live/MacTeX latexdiff
 latexdiff_engine = "docker"   # Uses am009/git-latexdiff-web Docker worker
 ```
 *Online mode only sends the main .tex file text to the online service.*
@@ -118,7 +123,7 @@ Running `Step_8_generate_latexdiff_report.ipynb` creates a visual diff of two ma
 - **Online** (`latexdiff_engine = "online"`):  
   Sends only the old and new main `.tex` files to [3142.nl/latex-diff/](https://3142.nl/latex-diff/), receives a diff `.tex` file, and compiles it locally.
 - **Local** (`latexdiff_engine = "local"`):  
-  Uses your installed MiKTeX/latexdiff.
+  Uses your installed MiKTeX, TeX Live, or MacTeX `latexdiff` and `pdflatex`.
 - **Docker** (`latexdiff_engine = "docker"`):  
   Runs the `git-latexdiff-web` worker image from [Docker Hub](https://hub.docker.com/r/am009/latexdiff-web-worker): `am009/latexdiff-web-worker`.
   Pub Assist prepares the worker folder with `old.zip`, `new.zip`, and `config.json`, then runs:
@@ -176,7 +181,7 @@ run_worker = True
 
 ### Troubleshooting
 
-- If Docker fails, confirm Docker Desktop is running.
+- If Docker fails, confirm Docker Desktop is running on Windows/macOS or the Docker daemon is running on Linux.
 - For a Perl error (`MiKTeX could not find the script engine 'perl'`), install Perl and restart your terminal/session.
 - If `manuscript.tex` is missing, verify `main_tex` matches inside zip files.
 - If Windows reports `PermissionError` while deleting `latexdiff_runs/current`, Docker, OneDrive, Explorer, or antivirus may still be holding the previous run's generated `.git` folder. Pub Assist will try to move that old workspace aside automatically; if Windows still blocks it, close anything using the folder or choose a fresh workspace folder such as `latexdiff_runs/current_2`.
@@ -196,6 +201,12 @@ doi_list = [
 output_bib_file = "references_from_dois.bib"
 ```
 Run the notebook. It tries DOI content negotiation first, then Crossref, and formats entries in a readable way.
+
+---
+
+## Copying Style Files
+
+The app and `copy_style_files_to_folder.ipynb` can copy `.sty` files from MiKTeX, TeX Live, or MacTeX. On Linux/macOS, leave the TeX path blank when `kpsewhich` is available; Pub Assist will ask `kpsewhich` where each package lives. You can still provide a manual TeX `latex/` folder if needed.
 
 ---
 
@@ -224,6 +235,7 @@ pub_assist/
 |-- app.py
 |-- requirements_app.txt
 |-- start_app.bat
+|-- start_app.sh
 |-- Modularize_Latex_file_in_Latex_project.ipynb
 |-- New_line_each_sentence_each_section_in_Sections_folder.ipynb
 |-- Step_1_generate_latex_project.ipynb
