@@ -13,6 +13,7 @@
 - **Figure Organization**: Moves all used figures to a dedicated directory.
 - **Final Beautification**: Optimizes formatting for journal compliance.
 - **Journal Style Integration**: Copies required style files for submission.
+- **Revision Diff Reports**: Prepares and runs a git-latexdiff-web workflow for old/new LaTeX project comparisons.
 
 ## **Workflow Steps**
 The project follows a structured approach to preparing a manuscript:
@@ -53,7 +54,16 @@ The project follows a structured approach to preparing a manuscript:
    - Ensures uniform font styles, spacing, and indentation.
    - Adjusts title and section formatting to align with journal-specific requirements.
 
-9. **Copy Style Files (`copy_style_files_to_folder.ipynb`)**
+9. **Reviewer Response Template (`Step_7_generate_reviewer_response_template.ipynb`)**
+   - Generates a LaTeX template for structured reviewer responses.
+   - Creates placeholder sections for reviewer comments, responses, and manuscript revisions.
+
+10. **Generate LaTeX Diff Report (`Step_8_generate_latexdiff_report.ipynb`)**
+   - Packages old and revised LaTeX projects into the layout expected by `am009/git-latexdiff-web`.
+   - Writes `config.json` for the Docker worker.
+   - Optionally runs the worker to generate `diff.pdf` and a diffed LaTeX project.
+
+11. **Copy Style Files (`copy_style_files_to_folder.ipynb`)**
    - Copies necessary style files into the project directory.
    - Journals often compile articles on their own server and may require specific style files for proper compilation.
 
@@ -61,8 +71,9 @@ The project follows a structured approach to preparing a manuscript:
 1. Clone or download the repository.
 2. If you have an existing latex project copy and paste that folder it in the repository.
 3. Ensure you have Python 3.x installed.
-4. Open and execute the Jupyter Notebooks in sequential order (recommended not mandatory).
-5. Use `beautify.py` to apply final formatting to the document.
+4. Install and start Docker Desktop if you plan to run `Step_8_generate_latexdiff_report.ipynb`.
+5. Open and execute the Jupyter Notebooks in sequential order (recommended not mandatory).
+6. Use `beautify.py` to apply final formatting to the document.
 
 
 ## **Project Structure**
@@ -77,9 +88,12 @@ pub_assist-main/
 │── Step_4_review_floats.ipynb
 │── Step_5_put_all_figures_used_in_a_sep_fig_folder.ipynb
 │── Step_6_beautification.ipynb
+│── Step_7_generate_reviewer_response_template.ipynb
+│── Step_8_generate_latexdiff_report.ipynb
 │── copy_style_files_to_folder.ipynb
 │── Resources/
 │   └── symbols.md
 │── python_files/
 │   ├── beautify.py
+│   ├── latexdiff_web.py
 ```
