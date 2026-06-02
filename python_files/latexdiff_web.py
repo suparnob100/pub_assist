@@ -1,13 +1,19 @@
 import json
+import html
 import os
+import re
 import shlex
 import shutil
 import subprocess
+import urllib.error
+import urllib.parse
+import urllib.request
 import zipfile
 from pathlib import Path
 
 
 DEFAULT_WORKER_IMAGE = "am009/latexdiff-web-worker"
+ONLINE_LATEXDIFF_URL = "https://3142.nl/latex-diff/"
 WORKSPACE_MARKER = ".pub_assist_latexdiff_workspace"
 
 DEFAULT_SUBMISSION_STYLE = {
@@ -28,6 +34,10 @@ class LatexdiffWorkerError(RuntimeError):
 
 class LocalLatexdiffError(RuntimeError):
     """Raised when local latexdiff or LaTeX compilation fails."""
+
+
+class OnlineLatexdiffError(RuntimeError):
+    """Raised when the online latexdiff form fails."""
 
 
 def _as_path(path):
@@ -100,6 +110,59 @@ def _run_command(command, cwd, use_cmd=False):
         "stdout": result.stdout,
         "stderr": result.stderr,
     }
+
+
+def _compile_pdf_from_diff_tex(
+    diff_tex,
+    workspace,
+    pdflatex_executable="pdflatex",
+    use_cmd=False,
+):
+    diff_tex = _as_path(diff_tex)
+    workspace = _as_path(workspace)
+    main_file_name = diff_tex.name
+    compile_dir = diff_tex.parent
+    pdf_path = compile_dir / f"{diff_tex.stem}.pdf"
+    commands = []
+
+    for command in [
+        [pdflatex_executable, "-interaction=nonstopmode", "-halt-on-error", main_file_name],
+        [pdflatex_executable, "-interaction=nonstopmode", "-halt-on-error", main_file_name],
+    ]:
+        result = _run_command(command, cwd=compile_dir, use_cmd=use_cmd)
+        commands.append(result)
+        if result["returncode"] != 0:
+            return {
+                "returncode": result["returncode"],
+                "commands": commands,
+                "stdout": result["stdout"],
+                "stderr": result["stderr"],
+                "diff_pdf": str(workspace / "diff.pdf"),
+                "diff_tex": str(diff_tex),
+            }
+
+    if pdf_path.exists():
+        shutil.copy2(pdf_path, workspace / "diff.pdf")
+
+    return {
+        "returncode": 0 if (workspace / "diff.pdf").exists() else 1,
+        "commands": commands,
+        "stdout": "\n".join(command["stdout"] for command in commands if command["stdout"]),
+        "stderr": "\n".join(command["stderr"] for command in commands if command["stderr"]),
+        "diff_pdf": str(workspace / "diff.pdf"),
+        "diff_tex": str(diff_tex),
+    }
+
+
+def _extract_online_diff_tex(response_text):
+    textareas = re.findall(r"<textarea\b[^>]*>(.*?)</textarea>", response_text, flags=re.IGNORECASE | re.DOTALL)
+    if len(textareas) < 3:
+        raise OnlineLatexdiffError(
+            "The online latexdiff response did not contain a diff textarea. "
+            "The service may have changed, rejected the input, or failed to run latexdiff."
+        )
+
+    return html.unescape(textareas[-1]).replace("\r\n", "\n")
 
 
 def _reset_workspace(workspace):
@@ -411,5 +474,149 @@ def run_local_latexdiff(
 
     if check and output["returncode"] != 0:
         raise LocalLatexdiffError("local latexdiff finished without creating diff.pdf")
+
+    return output
+
+
+def run_online_latexdiff(
+    workspace_dir,
+    service_url=ONLINE_LATEXDIFF_URL,
+    pdflatex_executable="pdflatex",
+    compile_pdf=True,
+    timeout=120,
+    use_cmd=False,
+    check=True,
+):
+    """
+    Use the online form at https://3142.nl/latex-diff/ to generate diff .tex.
+
+    This mode sends only the old and new main .tex file contents to the
+    third-party website. It does not upload project zips, bibliography files,
+    figures, or style files. The returned diff .tex is compiled locally.
+    """
+    workspace = _as_path(workspace_dir)
+    config_path = workspace / "config.json"
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    main_tex = config["main_tex"]
+
+    online_dir = workspace / "online-latexdiff"
+    if online_dir.exists():
+        shutil.rmtree(online_dir)
+
+    old_dir = online_dir / "old"
+    new_dir = online_dir / "new"
+    build_dir = online_dir / "build"
+
+    _extract_zip(workspace / "old.zip", old_dir)
+    _extract_zip(workspace / "new.zip", new_dir)
+
+    # Build against the new project files, with old-only assets copied first.
+    _copy_tree_contents(old_dir, build_dir)
+    _copy_tree_contents(new_dir, build_dir)
+
+    old_tex = old_dir / main_tex
+    new_tex = new_dir / main_tex
+    diff_tex = build_dir / main_tex
+
+    if not old_tex.exists():
+        raise FileNotFoundError(f"Old project does not contain {main_tex}: {old_tex}")
+    if not new_tex.exists():
+        raise FileNotFoundError(f"New project does not contain {main_tex}: {new_tex}")
+
+    old_text = old_tex.read_text(encoding="utf-8", errors="replace")
+    new_text = new_tex.read_text(encoding="utf-8", errors="replace")
+
+    data = urllib.parse.urlencode({"old": old_text, "new": new_text}).encode("utf-8")
+    request = urllib.request.Request(
+        service_url,
+        data=data,
+        headers={
+            "User-Agent": "pub-assist-online-latexdiff/1.0",
+            "Content-Type": "application/x-www-form-urlencoded",
+        },
+        method="POST",
+    )
+
+    command_label = f"POST {service_url} with old/new main .tex fields"
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            charset = response.headers.get_content_charset() or "utf-8"
+            response_text = response.read().decode(charset, errors="replace")
+    except urllib.error.URLError as exc:
+        output = {
+            "returncode": 1,
+            "commands": [{"command": command_label, "returncode": 1, "stdout": "", "stderr": str(exc)}],
+            "stdout": "",
+            "stderr": str(exc),
+            "diff_pdf": str(workspace / "diff.pdf"),
+            "diff_project": str(build_dir),
+            "diff_tex": str(diff_tex),
+        }
+        if check:
+            raise OnlineLatexdiffError(f"Online latexdiff request failed: {exc}") from exc
+        return output
+
+    try:
+        diff_tex_text = _extract_online_diff_tex(response_text)
+    except OnlineLatexdiffError as exc:
+        output = {
+            "returncode": 1,
+            "commands": [{"command": command_label, "returncode": 1, "stdout": response_text, "stderr": str(exc)}],
+            "stdout": response_text,
+            "stderr": str(exc),
+            "diff_pdf": str(workspace / "diff.pdf"),
+            "diff_project": str(build_dir),
+            "diff_tex": str(diff_tex),
+        }
+        if check:
+            raise
+        return output
+
+    diff_tex.parent.mkdir(parents=True, exist_ok=True)
+    diff_tex.write_text(diff_tex_text, encoding="utf-8")
+
+    commands = [
+        {
+            "command": command_label,
+            "returncode": 0,
+            "stdout": f"Received {len(diff_tex_text)} characters of diff .tex from {service_url}",
+            "stderr": "",
+        }
+    ]
+
+    if compile_pdf:
+        compile_result = _compile_pdf_from_diff_tex(
+            diff_tex=diff_tex,
+            workspace=workspace,
+            pdflatex_executable=pdflatex_executable,
+            use_cmd=use_cmd,
+        )
+        commands.extend(compile_result.get("commands", []))
+
+        output = {
+            "returncode": compile_result["returncode"],
+            "commands": commands,
+            "stdout": "\n".join([commands[0]["stdout"], compile_result.get("stdout", "")]).strip(),
+            "stderr": compile_result.get("stderr", ""),
+            "diff_pdf": str(workspace / "diff.pdf"),
+            "diff_project": str(build_dir),
+            "diff_tex": str(diff_tex),
+        }
+    else:
+        output = {
+            "returncode": 0,
+            "commands": commands,
+            "stdout": commands[0]["stdout"],
+            "stderr": "",
+            "diff_pdf": str(workspace / "diff.pdf"),
+            "diff_project": str(build_dir),
+            "diff_tex": str(diff_tex),
+        }
+
+    if check and output["returncode"] != 0:
+        raise OnlineLatexdiffError(
+            "online latexdiff generated a diff .tex, but local pdflatex failed.\n\n"
+            f"stdout:\n{output['stdout']}\n\nstderr:\n{output['stderr']}"
+        )
 
     return output

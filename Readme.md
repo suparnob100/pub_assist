@@ -12,7 +12,7 @@ Pub Assist is a notebook-based workflow for preparing LaTeX manuscripts for jour
 - **Float review and figure organization**: Inspect figures/tables and collect used figures into one folder.
 - **Reviewer-response template**: Generate a structured LaTeX response-to-reviewers file.
 - **DOI to BibTeX**: Fetch BibTeX entries from a list of DOIs.
-- **LaTeX diff report**: Generate `diff.pdf` from old and new manuscript projects using local MiKTeX/latexdiff or Docker.
+- **LaTeX diff report**: Generate `diff.pdf` from old and new manuscript projects using local MiKTeX/latexdiff, Docker, or the opt-in online latexdiff form.
 - **Submission Word documents**: Generate cover letter, highlights, conflict of interest, title files, and other journal submission `.docx` files from paper-specific inputs.
 
 ## Notebooks
@@ -47,8 +47,8 @@ Pub Assist is a notebook-based workflow for preparing LaTeX manuscripts for jour
 
 10. `Step_8_generate_latexdiff_report.ipynb`
     - Builds a visual revision diff between old and new LaTeX projects.
-    - Uses local MiKTeX/latexdiff by default.
-    - Can use `am009/git-latexdiff-web` through Docker when `use_docker = True`.
+    - Supports `latexdiff_engine = "online"`, `"local"`, or `"docker"`.
+    - Online mode sends only the old/new main `.tex` text to `https://3142.nl/latex-diff/`.
     - Default style shows blue added text and red struck-through deleted text.
 
 11. `Step_9_generate_submission_word_documents.ipynb`
@@ -69,25 +69,31 @@ Pub Assist is a notebook-based workflow for preparing LaTeX manuscripts for jour
 2. Install Python 3.x and Jupyter.
 3. Open the notebook you need and edit the user-input cell near the top.
 4. Run the notebook cells in order.
-5. For `Step_8_generate_latexdiff_report.ipynb`, install MiKTeX with `latexdiff`, `pdflatex`, and `bibtex`/`biber`.
+5. For `Step_8_generate_latexdiff_report.ipynb`, install MiKTeX with `pdflatex`. Local mode also needs `latexdiff` and `bibtex`/`biber`.
 6. MiKTeX's `latexdiff` requires Perl. Install Perl if MiKTeX reports that the script engine `perl` is missing.
-7. Docker Desktop is optional and is needed only if `use_docker = True`.
+7. Docker Desktop is optional and is needed only if `latexdiff_engine = "docker"`.
 8. For `Step_9_generate_submission_word_documents.ipynb`, install `python-docx` if your environment does not already have it.
 
 ## Generating a LaTeX Diff PDF
 
 Use `Step_8_generate_latexdiff_report.ipynb`.
 
-The notebook has two engines:
+The notebook has three engines:
 
 ```python
-use_docker = False
+latexdiff_engine = "online"
+```
+
+uses the online form at `https://3142.nl/latex-diff/`. It uploads only the old and new main `.tex` files, saves the returned diff `.tex`, and compiles it locally with `pdflatex`. It does not upload project zips, figures, `.bib`, or `.bbl` files.
+
+```python
+latexdiff_engine = "local"
 ```
 
 uses local MiKTeX/latexdiff.
 
 ```python
-use_docker = True
+latexdiff_engine = "docker"
 ```
 
 uses the Docker `git-latexdiff-web` worker.
@@ -110,7 +116,8 @@ old_project = r"old"
 new_project = r"new"
 main_tex = "manuscript.tex"
 bib = "bibtex"
-use_docker = False
+latexdiff_engine = "online"
+confirm_online_upload = True
 run_worker = True
 ```
 
@@ -151,6 +158,18 @@ By default:
 
 This is controlled by `style = None`, which uses Pub Assist's default style from `python_files/latexdiff_web.py`.
 
+### Online Mode
+
+Online mode is useful when Docker is off and local `latexdiff` cannot run because Perl is missing:
+
+```python
+latexdiff_engine = "online"
+confirm_online_upload = True
+online_latexdiff_url = "https://3142.nl/latex-diff/"
+```
+
+This mode posts only the old and new main `.tex` file contents to the online form. It saves the returned diff `.tex` under `online-latexdiff/build/` and compiles that file locally with `pdflatex`. Full project diffing, `.bib`, `.bbl`, figures, and subfile flattening are not handled by the online service.
+
 ### Local MiKTeX Mode
 
 Local mode unzips the old and new projects into a timestamped workspace, runs `latexdiff`, and compiles the generated diff with `pdflatex`.
@@ -176,7 +195,7 @@ install Perl, for example Strawberry Perl on Windows, then restart the terminal/
 Docker mode is still available as a fallback:
 
 ```python
-use_docker = True
+latexdiff_engine = "docker"
 run_docker_through_cmd = True
 auto_start_docker = True
 docker_start_timeout_seconds = 120
@@ -197,7 +216,7 @@ Important outputs:
 
 ```text
 latexdiff_runs/notebook_runs/YYYYMMDD_HHMMSS/diff.pdf
-latexdiff_runs/notebook_runs/YYYYMMDD_HHMMSS/git-latexdiff/new/manuscript.tex
+latexdiff_runs/notebook_runs/YYYYMMDD_HHMMSS/online-latexdiff/build/manuscript.tex
 ```
 
 `latexdiff_runs/` is generated output and is ignored by Git.
@@ -205,7 +224,8 @@ latexdiff_runs/notebook_runs/YYYYMMDD_HHMMSS/git-latexdiff/new/manuscript.tex
 ### Troubleshooting
 
 - If Docker fails, make sure Docker Desktop can start on your machine.
-- If `use_docker = True`, the notebook checks both `docker --version` and `docker info` before launching the worker. If `docker info` fails and `auto_start_docker = True`, it starts Docker Desktop and waits up to `docker_start_timeout_seconds`.
+- If `latexdiff_engine = "docker"`, the notebook checks both `docker --version` and `docker info` before launching the worker. If `docker info` fails and `auto_start_docker = True`, it starts Docker Desktop and waits up to `docker_start_timeout_seconds`.
+- If `latexdiff_engine = "online"`, make sure `confirm_online_upload = True` and that you are comfortable sending the old/new main `.tex` text to the online service.
 - If local `latexdiff` fails with a Perl error, install Perl and restart Jupyter.
 - If the notebook says `manuscript.tex` is missing, check that `main_tex` matches the path inside both zip files.
 - If a folder contains multiple zip files that each contain `main_tex`, point `old_project` or `new_project` directly to the intended zip.
