@@ -1,116 +1,128 @@
-# Pub Assist: LaTeX Manuscript Preparation for Journal Submission
+# Pub Assist: Prepare LaTeX Manuscripts for Journal Submission
 
-Pub Assist is a notebook-based workflow for preparing LaTeX manuscripts for journal submission, revision, and response-to-review. It helps organize manuscript files, clean and reassemble LaTeX, manage figures, generate reviewer-response templates, build DOI-based BibTeX files, and create visual LaTeX diff PDFs.
+**Pub Assist** offers a notebook-driven workflow to prepare LaTeX manuscripts for submission, revision, and reviewer response. It helps you organize files, modularize and reassemble LaTeX documents, manage figures, generate reviewer response templates, build BibTeX files from DOIs, and create visual diff PDFs of your manuscript revisions.
+
+Pub Assist also comes with a local web app that enables the complete workflow through your browser.
 
 ## Features
 
-- **Modularize LaTeX files**: Split a large manuscript into section files.
-- **Version-control friendly formatting**: Put each sentence on a separate line.
-- **Project generation**: Create a structured LaTeX project with sections, appendices, figures, and references.
-- **Document reassembly**: Merge modular files back into a single manuscript.
-- **Cleanup and beautification**: Remove redundant LaTeX and apply formatting.
-- **Float review and figure organization**: Inspect figures/tables and collect used figures into one folder.
-- **Reviewer-response template**: Generate a structured LaTeX response-to-reviewers file.
-- **DOI to BibTeX**: Fetch BibTeX entries from a list of DOIs.
-- **LaTeX diff report**: Generate `diff.pdf` from old and new manuscript projects using local MiKTeX/latexdiff, Docker, or the opt-in online latexdiff form.
-- **Submission Word documents**: Generate cover letter, highlights, conflict of interest, title files, and other journal submission `.docx` files from paper-specific inputs.
+- **Modularize LaTeX:** Split large manuscripts into separate section files.
+- **Version control optimized:** Format so each sentence is on its own line for improved Git diffs.
+- **Project builder:** Assemble a well-structured LaTeX project with sections, figures, appendices, and references.
+- **Reassembly:** Combine modular files back to a single manuscript.
+- **Cleanup:** Remove redundant code and beautify your LaTeX.
+- **Figure/floats organization:** Review and gather all figures used in one folder.
+- **Reviewer response template:** Create a structured response file in LaTeX.
+- **DOI to BibTeX:** Retrieve BibTeX entries automatically from DOIs.
+- **LaTeX diff PDF:** Visually compare manuscript versions using MiKTeX/latexdiff locally, Docker, or via an online service.
+- **Submission Word Docs:** Auto-generate `.docx` files required for journal submission (cover letter, highlights, declarations, etc.) from project inputs.
 
-## Notebooks
+## Workflow Notebooks
 
-1. `Modularize_Latex_file_in_Latex_project.ipynb`
-   - Splits a monolithic LaTeX manuscript into section-based files.
+The following notebooks guide you through the preparation workflow:
 
-2. `New_line_each_sentence_each_section_in_Sections_folder.ipynb`
-   - Rewrites section files so each sentence starts on a new line.
-   - This makes Git diffs and revision tracking easier to read.
+1. **`Modularize_Latex_file_in_Latex_project.ipynb`:**  
+   Splits a single LaTeX file into section-based files.
+   
+2. **`New_line_each_sentence_each_section_in_Sections_folder.ipynb`:**  
+   Ensures each sentence starts on a new line for improved diffing and collaboration.
 
-3. `Step_1_generate_latex_project.ipynb`
-   - Creates a starter LaTeX project structure.
+3. **`Step_1_generate_latex_project.ipynb`:**  
+   Initializes a new, structured LaTeX project.
+   
+4. **`Step_2_reassemble_document_from_project.ipynb`:**  
+   Merges section files into a single document.
+   
+5. **`Step_3_clean_latex_files.ipynb`:**  
+   Cleans up comments and whitespace.
+   
+6. **`Step_4_review_floats.ipynb`:**  
+   Lists and reviews figures, tables, and other floats.
+   
+7. **`Step_5_put_all_figures_used_in_a_sep_fig_folder.ipynb`:**  
+   Collects used figures into one directory.
+   
+8. **`Step_6_beautification.ipynb`:**  
+   Final formatting and beautification.
 
-4. `Step_2_reassemble_document_from_project.ipynb`
-   - Reassembles modular section files into one manuscript file.
+9. **`Step_7_generate_reviewer_response_template.ipynb`:**  
+   Creates a ready-to-edit `response_to_reviewers_template.tex`.
 
-5. `Step_3_clean_latex_files.ipynb`
-   - Cleans redundant comments, whitespace, and LaTeX fragments.
+10. **`Step_8_generate_latexdiff_report.ipynb`:**  
+    Builds a diff (visual changes) between two manuscript versions using various engines (local, Docker, or online).
 
-6. `Step_4_review_floats.ipynb`
-   - Reviews figure, table, equation, and other float-related LaTeX.
+11. **`Step_9_generate_submission_word_documents.ipynb`:**  
+    Exports submission materials like cover letters, titles, and declarations as `.docx` files, supporting both single- and double-blind workflows.
 
-7. `Step_5_put_all_figures_used_in_a_sep_fig_folder.ipynb`
-   - Copies all figures used by the manuscript into a separate figure folder.
+12. **`Generate_BibTeX_from_DOIs.ipynb`:**  
+    Creates a BibTeX file from provided DOIs.
 
-8. `Step_6_beautification.ipynb`
-   - Applies final LaTeX formatting using `python_files/beautify.py`.
-
-9. `Step_7_generate_reviewer_response_template.ipynb`
-   - Generates `response_to_reviewers_template.tex`.
-
-10. `Step_8_generate_latexdiff_report.ipynb`
-    - Builds a visual revision diff between old and new LaTeX projects.
-    - Supports `latexdiff_engine = "online"`, `"local"`, or `"docker"`.
-    - Online mode sends only the old/new main `.tex` text to `https://3142.nl/latex-diff/`.
-    - Default style shows blue added text and red struck-through deleted text.
-
-11. `Step_9_generate_submission_word_documents.ipynb`
-    - Generates Word files for journal submission materials.
-    - Includes original and revised cover letters, highlights, conflict of interest, author declaration, funding statement, data availability statement, reviewer suggestions, submission checklist, and title files.
-    - Creates separate blinded and author-containing title files when `double_blind = True`.
-
-12. `Generate_BibTeX_from_DOIs.ipynb`
-    - Fetches BibTeX entries from DOI strings or DOI URLs.
-    - Writes one BibTeX field per line for readability.
-
-13. `copy_style_files_to_folder.ipynb`
-    - Copies journal class/style files into a manuscript project.
+13. **`copy_style_files_to_folder.ipynb`:**  
+    Copies journal class/style files into your project.
 
 ## Quick Start
 
-1. Clone or download this repository.
+1. Clone or download the repository.
 2. Install Python 3.x and Jupyter.
-3. Open the notebook you need and edit the user-input cell near the top.
-4. Run the notebook cells in order.
-5. For `Step_8_generate_latexdiff_report.ipynb`, install MiKTeX with `pdflatex`. Local mode also needs `latexdiff` and `bibtex`/`biber`.
-6. MiKTeX's `latexdiff` requires Perl. Install Perl if MiKTeX reports that the script engine `perl` is missing.
-7. Docker Desktop is optional and is needed only if `latexdiff_engine = "docker"`.
-8. For `Step_9_generate_submission_word_documents.ipynb`, install `python-docx` if your environment does not already have it.
+3. Open the desired notebook and fill out the user input cell near the top.
+4. Run each cell in order.
+5. For `Step_8_generate_latexdiff_report.ipynb`, install MiKTeX with `pdflatex`. For local diffing, ensure `latexdiff` and `bibtex`/`biber` utilities are available.
+6. If MiKTeX reports a missing script engine `'perl'`, install Perl (e.g., Strawberry Perl on Windows).
+7. Optionally, install Docker Desktop for Docker-based diffing.
+8. For Word document generation, make sure `python-docx` is installed.
 
-## Generating a LaTeX Diff PDF
+## Local Web App
 
-Use `Step_8_generate_latexdiff_report.ipynb`.
+Pub Assist provides a FastAPI web app for browser-based access to the workflow.
 
-The notebook has three engines:
-
-```python
-latexdiff_engine = "online"
-```
-
-uses the online form at `https://3142.nl/latex-diff/`. It uploads only the old and new main `.tex` files, saves the returned diff `.tex`, and compiles it locally with `pdflatex`. It does not upload project zips, figures, `.bib`, or `.bbl` files.
-
-```python
-latexdiff_engine = "local"
-```
-
-uses local MiKTeX/latexdiff.
-
-```python
-latexdiff_engine = "docker"
-```
-
-uses the Docker `git-latexdiff-web` worker.
-
-The notebook supports either:
-
-- Expanded LaTeX project folders.
-- Direct `.zip` files.
-- Folders containing one usable `.zip` file, such as:
-
+App layout:
 ```text
-old/old.zip
-new/new.zip
+app.py
+static/
+start_app.bat
+requirements_app.txt
 ```
 
-For the current repo layout, the notebook is configured as:
+### Installation and Launch
 
+Install dependencies:
+```bash
+pip install -r requirements_app.txt
+```
+
+On Windows:
+```bat
+start_app.bat
+```
+Or start manually:
+```bash
+uvicorn app:app --reload --host 127.0.0.1 --port 7654
+```
+
+Browse to [http://127.0.0.1:7654](http://127.0.0.1:7654) for the app UI, which covers the entire workflow: project generation, modularization, formatting, float/fugure review, beautification, response template, LaTeX diff generation, DOI-to-BibTeX, etc.
+
+**LaTeX Diff supports:**
+```python
+latexdiff_engine = "online"   # Uses online form + local pdflatex
+latexdiff_engine = "local"    # Uses local MiKTeX/latexdiff
+latexdiff_engine = "docker"   # Uses Docker worker
+```
+*Online mode only sends the main .tex file text to the online service.*
+
+---
+
+## Generate a LaTeX Diff PDF
+
+Running `Step_8_generate_latexdiff_report.ipynb` creates a visual diff of two manuscript versions. Three methods are supported:
+
+- **Online** (`latexdiff_engine = "online"`):  
+  Sends only the old and new main `.tex` files to [3142.nl/latex-diff/](https://3142.nl/latex-diff/), receives a diff `.tex` file, and compiles it locally.
+- **Local** (`latexdiff_engine = "local"`):  
+  Uses your installed MiKTeX/latexdiff.
+- **Docker** (`latexdiff_engine = "docker"`):  
+  Runs a Dockerized diff worker.
+
+The notebook accepts either full project folders, zip files, or folders containing a single `.zip` file containing `manuscript.tex`:
 ```python
 old_project = r"old"
 new_project = r"new"
@@ -121,138 +133,44 @@ confirm_online_upload = True
 run_worker = True
 ```
 
-The notebook automatically resolves `old` to `old/old.zip` and `new` to `new/new.zip` if those zip files contain `manuscript.tex`.
-
 ### Bibliography Modes
 
-Use:
+- `bib = "bibtex"` : For BibTeX/natbib workflows
+- `bib = "biber"` : For biber workflows
+- `bib = None` : When using generated `.bbl` files directly, or bibliography is not needed
 
-```python
-bib = "bibtex"
-```
+### Diff Styles
 
-for ordinary `.bib` workflows using BibTeX or natbib.
-
-Use:
-
-```python
-bib = "biber"
-```
-
-for biber workflows.
-
-Use:
-
-```python
-bib = None
-```
-
-when the old and new projects already include generated `.bbl` files, or when citations are not needed in the diff PDF. For a main file named `main.tex`, the matching generated bibliography file is usually `main.bbl`.
-
-### Diff Style
-
-By default:
-
-- Added text is blue with underline-wave markup.
-- Deleted text is red with strikeout markup.
-
-This is controlled by `style = None`, which uses Pub Assist's default style from `python_files/latexdiff_web.py`.
-
-### Online Mode
-
-Online mode is useful when Docker is off and local `latexdiff` cannot run because Perl is missing:
-
-```python
-latexdiff_engine = "online"
-confirm_online_upload = True
-online_latexdiff_url = "https://3142.nl/latex-diff/"
-```
-
-This mode posts only the old and new main `.tex` file contents to the online form. It saves the returned diff `.tex` under `online-latexdiff/build/` and compiles that file locally with `pdflatex`. Full project diffing, `.bib`, `.bbl`, figures, and subfile flattening are not handled by the online service.
-
-### Local MiKTeX Mode
-
-Local mode unzips the old and new projects into a timestamped workspace, runs `latexdiff`, and compiles the generated diff with `pdflatex`.
-
-Expected local commands on `PATH`:
-
-```text
-latexdiff
-pdflatex
-bibtex or biber
-```
-
-If MiKTeX shows this error:
-
-```text
-MiKTeX could not find the script engine 'perl'
-```
-
-install Perl, for example Strawberry Perl on Windows, then restart the terminal/Jupyter kernel so `latexdiff` can find it.
-
-### Docker Mode
-
-Docker mode is still available as a fallback:
-
-```python
-latexdiff_engine = "docker"
-run_docker_through_cmd = True
-auto_start_docker = True
-docker_start_timeout_seconds = 120
-```
-
-Docker is more reproducible because the worker image includes the required TeX tools, but it requires Docker Desktop to be running.
-When `auto_start_docker = True`, the notebook tries to start Docker Desktop before it fails the Docker preflight. When `run_docker_through_cmd = True`, the notebook checks Docker through `cmd.exe /c docker ...` on Windows and uses that same execution path for the Docker worker. If `cmd.exe` is not available, it falls back to direct Python subprocess execution.
-
-### Outputs
-
-Each notebook run creates a fresh timestamped workspace:
-
-```text
-latexdiff_runs/notebook_runs/YYYYMMDD_HHMMSS/
-```
-
-Important outputs:
-
-```text
-latexdiff_runs/notebook_runs/YYYYMMDD_HHMMSS/diff.pdf
-latexdiff_runs/notebook_runs/YYYYMMDD_HHMMSS/online-latexdiff/build/manuscript.tex
-```
-
-`latexdiff_runs/` is generated output and is ignored by Git.
+- Blue underlined for additions, red strikethrough for deletions (default).
+- Style is managed in `python_files/latexdiff_web.py`.
 
 ### Troubleshooting
 
-- If Docker fails, make sure Docker Desktop can start on your machine.
-- If `latexdiff_engine = "docker"`, the notebook checks both `docker --version` and `docker info` before launching the worker. If `docker info` fails and `auto_start_docker = True`, it starts Docker Desktop and waits up to `docker_start_timeout_seconds`.
-- If `latexdiff_engine = "online"`, make sure `confirm_online_upload = True` and that you are comfortable sending the old/new main `.tex` text to the online service.
-- If local `latexdiff` fails with a Perl error, install Perl and restart Jupyter.
-- If the notebook says `manuscript.tex` is missing, check that `main_tex` matches the path inside both zip files.
-- If a folder contains multiple zip files that each contain `main_tex`, point `old_project` or `new_project` directly to the intended zip.
-- Set `show_build_log = True` in the notebook to print the full LaTeX build log.
+- If Docker fails, confirm Docker Desktop is running.
+- For a Perl error (`MiKTeX could not find the script engine 'perl'`), install Perl and restart your terminal/session.
+- If `manuscript.tex` is missing, verify `main_tex` matches inside zip files.
+- To print build logs, enable `show_build_log = True` in the notebook.
 
-## Generating BibTeX from DOIs
+---
 
-Use `Generate_BibTeX_from_DOIs.ipynb`.
+## Creating BibTeX from DOIs
 
-Edit:
+Launch `Generate_BibTeX_from_DOIs.ipynb`, update:
 
 ```python
 doi_list = [
     "10.1038/nphys1170",
     "https://doi.org/10.1145/3375630",
 ]
-
 output_bib_file = "references_from_dois.bib"
 ```
+Run the notebook. It tries DOI content negotiation first, then Crossref, and formats entries in a readable way.
 
-Then run the notebook. It first tries DOI content negotiation through `doi.org`, then falls back to Crossref. Generated entries are formatted with one BibTeX field per line.
+---
 
 ## Generating Submission Word Documents
 
-Use `Step_9_generate_submission_word_documents.ipynb`.
-
-Edit the placeholder paper metadata in the first code cell:
+Edit your manuscript metadata in `Step_9_generate_submission_word_documents.ipynb`:
 
 ```python
 journal_name = "[Journal Name]"
@@ -262,25 +180,19 @@ clean_output_folder = True
 authors = [...]
 highlights = [...]
 ```
+Generated `.docx` files go in `submission_word_documents/`. If `double_blind` is set, both blinded and author title files are written. Two cover letters are produced: original and revised, with fields for manuscript ID, revision, major changes, and other declarations.
 
-Then run the notebook. It writes `.docx` files into:
+---
 
-```text
-submission_word_documents/
-```
-
-When `double_blind = True`, the notebook writes both `blinded_title_file.docx` and `authors_title_file.docx`. When `double_blind = False`, it writes a single `title_file.docx`.
-
-The packet includes both `original_cover_letter.docx` and `revised_cover_letter.docx`. The revised cover letter has placeholders for manuscript ID, revision round, decision date, response-to-reviewers file, major revision changes, and resubmission confirmations.
-
-Set `clean_output_folder = True` to remove older generated `.docx` files from `submission_word_documents/` before writing the new packet.
-
-## Project Structure
+## Project Layout
 
 ```text
 pub_assist/
 |-- .gitignore
 |-- Readme.md
+|-- app.py
+|-- requirements_app.txt
+|-- start_app.bat
 |-- Modularize_Latex_file_in_Latex_project.ipynb
 |-- New_line_each_sentence_each_section_in_Sections_folder.ipynb
 |-- Step_1_generate_latex_project.ipynb
@@ -297,6 +209,10 @@ pub_assist/
 |-- Resources/
 |   |-- endfloat.md
 |   `-- symbols.md
+|-- static/
+|   |-- app.js
+|   |-- index.html
+|   `-- style.css
 `-- python_files/
     |-- beautify.py
     |-- latexdiff_web.py
