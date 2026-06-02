@@ -1,4 +1,5 @@
 import json
+import os
 import shlex
 import shutil
 import subprocess
@@ -23,6 +24,10 @@ DEFAULT_SUBMISSION_STYLE = {
 
 class LatexdiffWorkerError(RuntimeError):
     """Raised when the git-latexdiff-web Docker worker fails."""
+
+
+class LocalLatexdiffError(RuntimeError):
+    """Raised when local latexdiff or LaTeX compilation fails."""
 
 
 def _as_path(path):
@@ -55,6 +60,46 @@ def _materialize_zip(source, target_zip):
             "Input must be a LaTeX project folder or an Overleaf-style .zip file: "
             f"{source_path}"
         )
+
+
+def _extract_zip(zip_path, destination):
+    destination = _as_path(destination)
+    destination.mkdir(parents=True, exist_ok=True)
+
+    with zipfile.ZipFile(_as_path(zip_path)) as archive:
+        archive.extractall(destination)
+
+
+def _copy_tree_contents(source, destination):
+    source = _as_path(source)
+    destination = _as_path(destination)
+    destination.mkdir(parents=True, exist_ok=True)
+
+    for item in source.iterdir():
+        target = destination / item.name
+        if item.is_dir():
+            shutil.copytree(item, target, dirs_exist_ok=True)
+        else:
+            shutil.copy2(item, target)
+
+
+def _run_command(command, cwd, use_cmd=False):
+    run_command = ["cmd", "/c"] + command if use_cmd else command
+    result = subprocess.run(
+        run_command,
+        cwd=str(cwd),
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        capture_output=True,
+    )
+
+    return {
+        "command": format_command(run_command),
+        "returncode": result.returncode,
+        "stdout": result.stdout,
+        "stderr": result.stderr,
+    }
 
 
 def _reset_workspace(workspace):
@@ -151,7 +196,12 @@ def docker_worker_command(workspace_dir, image=DEFAULT_WORKER_IMAGE, debug=False
 
 
 def format_command(command):
-    return " ".join(shlex.quote(str(part)) for part in command)
+    command = [str(part) for part in command]
+
+    if os.name == "nt":
+        return subprocess.list2cmdline(command)
+
+    return " ".join(shlex.quote(part) for part in command)
 
 
 def run_latexdiff_worker(
@@ -159,6 +209,7 @@ def run_latexdiff_worker(
     image=DEFAULT_WORKER_IMAGE,
     debug=False,
     pull_image=False,
+    use_cmd=False,
     check=True,
 ):
     """
@@ -167,18 +218,22 @@ def run_latexdiff_worker(
     workspace = _as_path(workspace_dir)
 
     if pull_image:
-        subprocess.run(["docker", "pull", image], check=True)
+        pull_command = ["docker", "pull", image]
+        subprocess.run(["cmd", "/c"] + pull_command if use_cmd else pull_command, check=True)
 
     command = docker_worker_command(workspace, image=image, debug=debug)
+    run_command = ["cmd", "/c"] + command if use_cmd else command
     result = subprocess.run(
-        command,
+        run_command,
         cwd=str(workspace),
         text=True,
+        encoding="utf-8",
+        errors="replace",
         capture_output=True,
     )
 
     output = {
-        "command": format_command(command),
+        "command": format_command(run_command),
         "returncode": result.returncode,
         "stdout": result.stdout,
         "stderr": result.stderr,
@@ -192,5 +247,169 @@ def run_latexdiff_worker(
             f"{result.returncode}.\n\nCommand:\n{output['command']}\n\n"
             f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}"
         )
+
+    return output
+
+
+def run_local_latexdiff(
+    workspace_dir,
+    latexdiff_executable="latexdiff",
+    pdflatex_executable="pdflatex",
+    bibtex_executable="bibtex",
+    biber_executable="biber",
+    compile_pdf=True,
+    use_cmd=False,
+    check=True,
+):
+    """
+    Run latexdiff locally using MiKTeX/TeX Live tools instead of Docker.
+
+    The workspace must already contain old.zip, new.zip, and config.json from
+    prepare_latexdiff_workspace().
+    """
+    workspace = _as_path(workspace_dir)
+    config_path = workspace / "config.json"
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+
+    main_tex = config["main_tex"]
+    bib = config.get("bib")
+    style = config.get("style")
+    other_cmdlines = config.get("other_cmdlines") or ""
+
+    local_dir = workspace / "local-latexdiff"
+    if local_dir.exists():
+        shutil.rmtree(local_dir)
+
+    old_dir = local_dir / "old"
+    new_dir = local_dir / "new"
+    build_dir = local_dir / "build"
+
+    _extract_zip(workspace / "old.zip", old_dir)
+    _extract_zip(workspace / "new.zip", new_dir)
+
+    # Compile against new files, but keep old-only assets available for deleted floats.
+    _copy_tree_contents(old_dir, build_dir)
+    _copy_tree_contents(new_dir, build_dir)
+
+    old_tex = old_dir / main_tex
+    new_tex = new_dir / main_tex
+    diff_tex = build_dir / main_tex
+
+    if not old_tex.exists():
+        raise FileNotFoundError(f"Old project does not contain {main_tex}: {old_tex}")
+    if not new_tex.exists():
+        raise FileNotFoundError(f"New project does not contain {main_tex}: {new_tex}")
+
+    latexdiff_command = [latexdiff_executable, "--flatten"]
+
+    if style is None or isinstance(style, dict):
+        latexdiff_command.append("--type=UNDERLINE")
+    elif isinstance(style, str):
+        latexdiff_command.append(f"--type={style}")
+
+    if other_cmdlines:
+        latexdiff_command.extend(shlex.split(other_cmdlines))
+
+    latexdiff_command.extend([str(old_tex), str(new_tex)])
+
+    run_latexdiff_command = ["cmd", "/c"] + latexdiff_command if use_cmd else latexdiff_command
+    latexdiff_result = subprocess.run(
+        run_latexdiff_command,
+        cwd=str(workspace),
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        capture_output=True,
+    )
+
+    if latexdiff_result.stdout:
+        diff_tex.parent.mkdir(parents=True, exist_ok=True)
+        diff_tex.write_text(latexdiff_result.stdout, encoding="utf-8")
+
+    commands = [
+        {
+            "command": format_command(run_latexdiff_command),
+            "returncode": latexdiff_result.returncode,
+            "stdout": latexdiff_result.stdout,
+            "stderr": latexdiff_result.stderr,
+        }
+    ]
+
+    if latexdiff_result.returncode != 0:
+        output = {
+            "returncode": latexdiff_result.returncode,
+            "commands": commands,
+            "stdout": latexdiff_result.stdout,
+            "stderr": latexdiff_result.stderr,
+            "diff_pdf": str(workspace / "diff.pdf"),
+            "diff_project": str(build_dir),
+            "diff_tex": str(diff_tex),
+        }
+
+        if check:
+            raise LocalLatexdiffError(
+                "local latexdiff failed.\n\nCommand:\n"
+                f"{commands[0]['command']}\n\nstderr:\n{latexdiff_result.stderr}"
+            )
+
+        return output
+
+    pdf_path = build_dir / f"{Path(main_tex).stem}.pdf"
+
+    if compile_pdf:
+        main_file_name = Path(main_tex).name
+        compile_dir = diff_tex.parent
+        compile_sequence = [
+            [pdflatex_executable, "-interaction=nonstopmode", "-halt-on-error", main_file_name],
+        ]
+
+        if bib == "bibtex":
+            compile_sequence.append([bibtex_executable, Path(main_tex).stem])
+        elif bib == "biber":
+            compile_sequence.append([biber_executable, Path(main_tex).stem])
+
+        compile_sequence.extend([
+            [pdflatex_executable, "-interaction=nonstopmode", "-halt-on-error", main_file_name],
+            [pdflatex_executable, "-interaction=nonstopmode", "-halt-on-error", main_file_name],
+        ])
+
+        for command in compile_sequence:
+            result = _run_command(command, cwd=compile_dir, use_cmd=use_cmd)
+            commands.append(result)
+
+            if result["returncode"] != 0:
+                output = {
+                    "returncode": result["returncode"],
+                    "commands": commands,
+                    "stdout": result["stdout"],
+                    "stderr": result["stderr"],
+                    "diff_pdf": str(workspace / "diff.pdf"),
+                    "diff_project": str(build_dir),
+                    "diff_tex": str(diff_tex),
+                }
+
+                if check:
+                    raise LocalLatexdiffError(
+                        "local LaTeX compilation failed.\n\nCommand:\n"
+                        f"{result['command']}\n\nstdout:\n{result['stdout']}\n\nstderr:\n{result['stderr']}"
+                    )
+
+                return output
+
+        if pdf_path.exists():
+            shutil.copy2(pdf_path, workspace / "diff.pdf")
+
+    output = {
+        "returncode": 0 if (not compile_pdf or (workspace / "diff.pdf").exists()) else 1,
+        "commands": commands,
+        "stdout": "\n".join(command["stdout"] for command in commands if command["stdout"]),
+        "stderr": "\n".join(command["stderr"] for command in commands if command["stderr"]),
+        "diff_pdf": str(workspace / "diff.pdf"),
+        "diff_project": str(build_dir),
+        "diff_tex": str(diff_tex),
+    }
+
+    if check and output["returncode"] != 0:
+        raise LocalLatexdiffError("local latexdiff finished without creating diff.pdf")
 
     return output
