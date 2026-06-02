@@ -3,7 +3,9 @@ Pub Assist — local web app.
 Run: uvicorn app:app --reload --port 7654
 """
 import asyncio
+import json
 import os
+import shutil
 import subprocess
 import sys
 import traceback
@@ -26,6 +28,7 @@ from collect_figures import collect_figures
 from copy_styles import find_and_copy_latex_style_files
 from doi2bib import generate_bibtex_entries, write_bibtex_file
 from latexdiff_web import (
+    normalize_bib_mode,
     prepare_latexdiff_workspace,
     run_local_latexdiff,
     run_latexdiff_worker,
@@ -328,14 +331,21 @@ async def api_latexdiff(req: LatexdiffRequest):
                 raise ValueError("latexdiff_engine must be 'online', 'local', or 'docker'.")
             if engine == "online" and not req.confirm_online_upload:
                 raise ValueError("Online latexdiff selected, but confirm_online_upload is false.")
+            bib = normalize_bib_mode(req.bib)
 
             ws = await _run_in_pool(
                 prepare_latexdiff_workspace,
                 req.old_project, req.new_project, req.main_tex,
-                req.workspace_dir, req.bib, req.style,
+                req.workspace_dir, bib, req.style,
             )
             if engine == "docker":
-                result = await _run_in_pool(run_latexdiff_worker, ws["workspace"])
+                docker_use_cmd = os.name == "nt" and shutil.which("cmd") is not None
+                result = await _run_in_pool(
+                    run_latexdiff_worker,
+                    ws["workspace"],
+                    use_cmd=docker_use_cmd,
+                    check=False,
+                )
             elif engine == "online":
                 result = await _run_in_pool(
                     run_online_latexdiff,
@@ -347,6 +357,11 @@ async def api_latexdiff(req: LatexdiffRequest):
                 )
             else:
                 result = await _run_in_pool(run_local_latexdiff, ws["workspace"])
+            if result.get("returncode", 0) != 0:
+                raise RuntimeError(
+                    "Latexdiff failed. Inspect the returned paths and logs below.\n\n"
+                    + json.dumps(result, indent=2)
+                )
             _finish_job(jid, {**ws, "latexdiff_engine": engine, **result})
         except Exception as exc:
             _fail_job(jid, exc)

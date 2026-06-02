@@ -4,7 +4,9 @@ import os
 import re
 import shlex
 import shutil
+import stat
 import subprocess
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -165,6 +167,68 @@ def _extract_online_diff_tex(response_text):
     return html.unescape(textareas[-1]).replace("\r\n", "\n")
 
 
+def _make_writable(path):
+    try:
+        os.chmod(path, stat.S_IREAD | stat.S_IWRITE | stat.S_IEXEC)
+    except OSError:
+        pass
+
+
+def _make_tree_writable(path):
+    path = Path(path)
+    if not path.exists():
+        return
+
+    for root, dirs, files in os.walk(path):
+        for name in files:
+            _make_writable(Path(root) / name)
+        for name in dirs:
+            _make_writable(Path(root) / name)
+    _make_writable(path)
+
+
+def _rmtree_onexc(func, path, exc):
+    _make_writable(path)
+    func(path)
+
+
+def _rmtree_onerror(func, path, exc_info):
+    _make_writable(path)
+    func(path)
+
+
+def _rmtree_with_retries(path, attempts=5, delay_seconds=0.4):
+    path = Path(path)
+    last_error = None
+
+    for attempt in range(attempts):
+        try:
+            _make_tree_writable(path)
+            try:
+                shutil.rmtree(path, onexc=_rmtree_onexc)
+            except TypeError:
+                shutil.rmtree(path, onerror=_rmtree_onerror)
+            return
+        except FileNotFoundError:
+            return
+        except OSError as exc:
+            last_error = exc
+            time.sleep(delay_seconds * (attempt + 1))
+
+    if last_error:
+        raise last_error
+
+
+def _quarantine_workspace(workspace):
+    workspace = Path(workspace)
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    stale_workspace = workspace.with_name(
+        f"{workspace.name}_stale_{timestamp}_{os.getpid()}"
+    )
+    workspace.rename(stale_workspace)
+    return stale_workspace
+
+
 def _reset_workspace(workspace):
     marker = workspace / WORKSPACE_MARKER
 
@@ -174,7 +238,130 @@ def _reset_workspace(workspace):
             f"Choose an empty/new workspace_dir or manually remove the directory."
         )
 
-    shutil.rmtree(workspace)
+    try:
+        _rmtree_with_retries(workspace)
+    except OSError as exc:
+        try:
+            _quarantine_workspace(workspace)
+        except OSError as quarantine_exc:
+            raise PermissionError(
+                f"Could not clear the previous latexdiff workspace: {workspace}\n\n"
+                "Windows is denying access to one or more files, often because "
+                "Docker, OneDrive, Explorer, or an antivirus scanner still has a "
+                "handle open. Close viewers/terminals using this folder or choose "
+                "a fresh workspace folder such as latexdiff_runs/current_2, then rerun."
+            ) from quarantine_exc
+
+
+def _zip_names(zip_path):
+    with zipfile.ZipFile(_as_path(zip_path)) as archive:
+        return [name for name in archive.namelist() if not name.endswith("/")]
+
+
+def _read_zip_member_text(zip_path, member_name):
+    normalized_member = str(member_name).replace("\\", "/")
+
+    with zipfile.ZipFile(_as_path(zip_path)) as archive:
+        names = archive.namelist()
+        matches = [
+            name for name in names
+            if name.replace("\\", "/") == normalized_member
+        ]
+        if not matches:
+            matches = [
+                name for name in names
+                if name.replace("\\", "/").endswith("/" + normalized_member)
+            ]
+        if not matches:
+            return ""
+        return archive.read(matches[0]).decode("utf-8", errors="replace")
+
+
+def _normalize_bib_name(name):
+    name = name.strip().strip("{}").replace("\\", "/").lstrip("./")
+    if not name:
+        return ""
+    return name if name.lower().endswith(".bib") else f"{name}.bib"
+
+
+def _declared_bib_files(tex_text):
+    declared = []
+
+    for match in re.finditer(r"\\bibliography\s*\{([^}]*)\}", tex_text):
+        declared.extend(_normalize_bib_name(part) for part in match.group(1).split(","))
+
+    for match in re.finditer(
+        r"\\(?:addbibresource|addglobalbib|addsectionbib)(?:\[[^\]]*\])?\s*\{([^}]*)\}",
+        tex_text,
+    ):
+        declared.append(_normalize_bib_name(match.group(1)))
+
+    return sorted({name for name in declared if name})
+
+
+def _zip_has_bib_file(zip_names, bib_name):
+    normalized = bib_name.replace("\\", "/").lstrip("./")
+    return any(
+        name.replace("\\", "/") == normalized
+        or name.replace("\\", "/").endswith("/" + normalized)
+        for name in zip_names
+    )
+
+
+def _validate_bibliography_assets(old_zip, new_zip, main_tex, bib):
+    mode = (bib or "").strip().lower() if isinstance(bib, str) else bib
+    if mode not in {"bibtex", "biber"}:
+        return
+
+    old_names = _zip_names(old_zip)
+    new_names = _zip_names(new_zip)
+    old_tex = _read_zip_member_text(old_zip, main_tex)
+    new_tex = _read_zip_member_text(new_zip, main_tex)
+    expected_bibs = sorted(set(_declared_bib_files(old_tex) + _declared_bib_files(new_tex)))
+
+    old_bibs = sorted(name for name in old_names if name.lower().endswith(".bib"))
+    new_bibs = sorted(name for name in new_names if name.lower().endswith(".bib"))
+
+    missing = []
+    if expected_bibs:
+        for bib_file in expected_bibs:
+            if not _zip_has_bib_file(old_names, bib_file):
+                missing.append(f"old.zip is missing {bib_file}")
+            if not _zip_has_bib_file(new_names, bib_file):
+                missing.append(f"new.zip is missing {bib_file}")
+    else:
+        if not old_bibs:
+            missing.append("old.zip does not contain any .bib files")
+        if not new_bibs:
+            missing.append("new.zip does not contain any .bib files")
+
+    if not missing:
+        return
+
+    raise ValueError(
+        f"Bibliography mode is {mode!r}, but the required .bib files were not found. "
+        "Docker/local latexdiff will run BibTeX/Biber in this mode, and it fails when "
+        "the bibliography database is absent.\n\n"
+        + "\n".join(f"- {item}" for item in missing)
+        + "\n\nFix: either add the .bib file(s) to both old and new projects, "
+        "or set bib=None / choose Bibliography mode 'none' if you are using generated "
+        ".bbl files or do not need bibliography regeneration."
+    )
+
+
+def normalize_bib_mode(bib):
+    if bib is None:
+        return None
+    if not isinstance(bib, str):
+        raise ValueError("bib must be 'bibtex', 'biber', 'none', or None.")
+
+    mode = bib.strip().lower()
+    if mode in {"", "none", "null", "no", "false"}:
+        return None
+    if mode in {"bibtex", "biber"}:
+        return mode
+
+    raise ValueError("bib must be 'bibtex', 'biber', 'none', or None.")
 
 
 def build_config(main_tex, bib=None, style=None, other_cmdlines=""):
@@ -184,6 +371,8 @@ def build_config(main_tex, bib=None, style=None, other_cmdlines=""):
     style can be a latexdiff style string such as "UNDERLINE", a custom style
     dictionary, or None for Pub Assist's submission-oriented default.
     """
+    bib = normalize_bib_mode(bib)
+
     return {
         "other_cmdlines": other_cmdlines or "",
         "style": DEFAULT_SUBMISSION_STYLE if style is None else style,
@@ -228,6 +417,8 @@ def prepare_latexdiff_workspace(
 
     _materialize_zip(old_project, old_zip)
     _materialize_zip(new_project, new_zip)
+    bib = normalize_bib_mode(bib)
+    _validate_bibliography_assets(old_zip, new_zip, main_tex, bib)
 
     config = build_config(
         main_tex=main_tex,
@@ -267,6 +458,98 @@ def format_command(command):
     return " ".join(shlex.quote(part) for part in command)
 
 
+def _read_worker_main_tex(workspace):
+    config_path = workspace / "config.json"
+    if not config_path.exists():
+        return None
+
+    try:
+        return json.loads(config_path.read_text(encoding="utf-8")).get("main_tex")
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+def _worker_diff_tex_candidates(workspace, main_tex):
+    if not main_tex:
+        return []
+
+    candidates = [workspace / "git-latexdiff" / "new" / main_tex]
+    for folder in sorted(workspace.glob("git-latexdiff*")):
+        if folder.is_dir():
+            candidates.append(folder / "new" / main_tex)
+
+    seen = set()
+    unique_candidates = []
+    for path in candidates:
+        resolved = str(path)
+        if resolved not in seen:
+            unique_candidates.append(path)
+            seen.add(resolved)
+    return unique_candidates
+
+
+def _first_existing(paths):
+    for path in paths:
+        if path and path.exists():
+            return path
+    return None
+
+
+def _worker_pdf_candidate(workspace):
+    diff_pdf = workspace / "diff.pdf"
+    if diff_pdf.exists():
+        return diff_pdf
+
+    candidates = []
+    for folder in sorted(workspace.glob("git-latexdiff*")):
+        if not folder.is_dir():
+            continue
+        for pdf in sorted(folder.rglob("*.pdf")):
+            try:
+                rel_parts = pdf.relative_to(folder).parts
+            except ValueError:
+                rel_parts = ()
+            # Avoid copying a project-supplied PDF from the extracted old/new trees.
+            if rel_parts and rel_parts[0] in {"old", "new"}:
+                continue
+            candidates.append(pdf)
+
+    return candidates[0] if candidates else None
+
+
+def _collect_worker_artifacts(workspace, main_tex):
+    candidates = [
+        workspace / "diff.pdf",
+        workspace / "diff.tex",
+        workspace / "config.json",
+        workspace / "old.zip",
+        workspace / "new.zip",
+        workspace / "git-latexdiff" / "old-main-fl.tex",
+        workspace / "git-latexdiff" / "new-main-fl.tex",
+    ]
+    candidates.extend(_worker_diff_tex_candidates(workspace, main_tex))
+
+    for folder in sorted(workspace.glob("git-latexdiff*")):
+        if not folder.is_dir():
+            continue
+        candidates.extend(sorted(folder.rglob("*.pdf")))
+
+    existing = []
+    seen = set()
+    for path in candidates:
+        if not path.exists():
+            continue
+        try:
+            display = str(path.relative_to(workspace))
+        except ValueError:
+            display = str(path)
+        if display not in seen:
+            existing.append(display)
+            seen.add(display)
+
+    return existing
+
+
 def run_latexdiff_worker(
     workspace_dir,
     image=DEFAULT_WORKER_IMAGE,
@@ -279,6 +562,7 @@ def run_latexdiff_worker(
     Run the Docker worker and return stdout, stderr, and expected output paths.
     """
     workspace = _as_path(workspace_dir)
+    main_tex = _read_worker_main_tex(workspace)
 
     if pull_image:
         pull_command = ["docker", "pull", image]
@@ -295,20 +579,50 @@ def run_latexdiff_worker(
         capture_output=True,
     )
 
+    root_diff_tex = workspace / "diff.tex"
+    worker_diff_tex = _first_existing(_worker_diff_tex_candidates(workspace, main_tex))
+    if worker_diff_tex and not root_diff_tex.exists():
+        shutil.copy2(worker_diff_tex, root_diff_tex)
+
+    diff_pdf = workspace / "diff.pdf"
+    pdf_candidate = _worker_pdf_candidate(workspace)
+    if pdf_candidate and pdf_candidate != diff_pdf and not diff_pdf.exists():
+        shutil.copy2(pdf_candidate, diff_pdf)
+
+    effective_returncode = result.returncode
+    postprocess_error = ""
+    if result.returncode == 0 and not diff_pdf.exists():
+        effective_returncode = 1
+        postprocess_error = (
+            "Docker worker exited successfully, but Pub Assist could not find "
+            f"{diff_pdf}. The worker should create diff.pdf at the mounted "
+            "workspace root. Inspect artifact_files and Docker stdout/stderr."
+        )
+
+    stderr = result.stderr
+    if postprocess_error:
+        stderr = "\n".join(part for part in [stderr, postprocess_error] if part)
+
     output = {
         "command": format_command(run_command),
-        "returncode": result.returncode,
+        "returncode": effective_returncode,
         "stdout": result.stdout,
-        "stderr": result.stderr,
-        "diff_pdf": str(workspace / "diff.pdf"),
+        "stderr": stderr,
+        "diff_pdf": str(diff_pdf),
+        "diff_tex": str(root_diff_tex if root_diff_tex.exists() else (worker_diff_tex or root_diff_tex)),
         "diff_project": str(workspace / "git-latexdiff" / "new"),
+        "artifact_files": _collect_worker_artifacts(workspace, main_tex),
+        "docker_image": image,
+        "docker_pull_command": format_command(["docker", "pull", image]),
     }
 
-    if check and result.returncode != 0:
+    if check and output["returncode"] != 0:
         raise LatexdiffWorkerError(
             "git-latexdiff-web worker failed with exit code "
-            f"{result.returncode}.\n\nCommand:\n{output['command']}\n\n"
-            f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}"
+            f"{output['returncode']}.\n\nCommand:\n{output['command']}\n\n"
+            f"Expected outputs:\n{output['diff_pdf']}\n{output['diff_tex']}\n\n"
+            f"Artifacts found:\n{json.dumps(output['artifact_files'], indent=2)}\n\n"
+            f"stdout:\n{result.stdout}\n\nstderr:\n{stderr}"
         )
 
     return output

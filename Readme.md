@@ -105,7 +105,7 @@ Browse to [http://127.0.0.1:7654](http://127.0.0.1:7654) for the app UI, which c
 ```python
 latexdiff_engine = "online"   # Uses online form + local pdflatex
 latexdiff_engine = "local"    # Uses local MiKTeX/latexdiff
-latexdiff_engine = "docker"   # Uses Docker worker
+latexdiff_engine = "docker"   # Uses am009/git-latexdiff-web Docker worker
 ```
 *Online mode only sends the main .tex file text to the online service.*
 
@@ -120,14 +120,44 @@ Running `Step_8_generate_latexdiff_report.ipynb` creates a visual diff of two ma
 - **Local** (`latexdiff_engine = "local"`):  
   Uses your installed MiKTeX/latexdiff.
 - **Docker** (`latexdiff_engine = "docker"`):  
-  Runs a Dockerized diff worker.
+  Runs the `git-latexdiff-web` worker image from [Docker Hub](https://hub.docker.com/r/am009/latexdiff-web-worker): `am009/latexdiff-web-worker`.
+  Pub Assist prepares the worker folder with `old.zip`, `new.zip`, and `config.json`, then runs:
+  ```bash
+  docker run --rm -v <workspace-folder>:/work am009/latexdiff-web-worker
+  ```
+
+To pre-download or verify the Docker worker image:
+```bash
+docker pull am009/latexdiff-web-worker
+```
+
+The image comes from the upstream [`am009/git-latexdiff-web`](https://github.com/am009/git-latexdiff-web) project. Its command-line worker expects this folder layout:
+```text
+<workspace-folder>/
+|-- old.zip
+|-- new.zip
+`-- config.json
+```
+After a successful Docker run, Pub Assist expects:
+```text
+<workspace-folder>/
+|-- diff.pdf                  # final visual diff PDF
+|-- diff.tex                  # convenience copy of the generated diffed main tex
+`-- git-latexdiff/
+    |-- new/
+    |   |-- manuscript.tex     # generated diffed main tex from the worker
+    |   `-- manuscript.tex.orig
+    |-- old-main-fl.tex
+    `-- new-main-fl.tex
+```
+If Docker exits without a root-level `diff.pdf`, Pub Assist now treats that as a failed run and prints the Docker logs plus the artifact paths it did find.
 
 The notebook accepts either full project folders, zip files, or folders containing a single `.zip` file containing `manuscript.tex`:
 ```python
 old_project = r"old"
 new_project = r"new"
 main_tex = "manuscript.tex"
-bib = "bibtex"
+bib = None
 latexdiff_engine = "online"
 confirm_online_upload = True
 run_worker = True
@@ -135,9 +165,9 @@ run_worker = True
 
 ### Bibliography Modes
 
-- `bib = "bibtex"` : For BibTeX/natbib workflows
-- `bib = "biber"` : For biber workflows
-- `bib = None` : When using generated `.bbl` files directly, or bibliography is not needed
+- `bib = None` : Default. Use this when the projects do not include the needed `.bib` files, when using generated `.bbl` files directly, or when bibliography regeneration is not needed.
+- `bib = "bibtex"` : For BibTeX/natbib workflows only when the required `.bib` files are present in both old and new projects.
+- `bib = "biber"` : For biber workflows only when the required `.bib` files are present in both old and new projects.
 
 ### Diff Styles
 
@@ -149,6 +179,7 @@ run_worker = True
 - If Docker fails, confirm Docker Desktop is running.
 - For a Perl error (`MiKTeX could not find the script engine 'perl'`), install Perl and restart your terminal/session.
 - If `manuscript.tex` is missing, verify `main_tex` matches inside zip files.
+- If Windows reports `PermissionError` while deleting `latexdiff_runs/current`, Docker, OneDrive, Explorer, or antivirus may still be holding the previous run's generated `.git` folder. Pub Assist will try to move that old workspace aside automatically; if Windows still blocks it, close anything using the folder or choose a fresh workspace folder such as `latexdiff_runs/current_2`.
 - To print build logs, enable `show_build_log = True` in the notebook.
 
 ---

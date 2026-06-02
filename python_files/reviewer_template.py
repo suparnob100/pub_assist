@@ -45,7 +45,7 @@ def build_reviewer_section(reviewer_number, n_comments):
             "",
             r"\responsetext{Write the response here.}",
             "",
-            r"\revisiontext{Describe the manuscript change here.}",
+            r"\revisiontext{Describe the manuscript change here. For example: The relevant text has been revised in Lines XX--YY.}",
             "",
         ]
     lines += [r"\end{enumerate}", ""]
@@ -81,11 +81,11 @@ __AUTHOR_BLOCK__
 \begin{document}
 \maketitle
 \begin{quote}
-We thank the editor and reviewers for their constructive comments.
+We thank the editor and reviewers for their time and for their constructive comments. We have revised the manuscript in response to the comments. The reviewer comments are reproduced below in blue, followed by our responses and a summary of the corresponding revisions. Line numbers refer to the revised manuscript.
 \end{quote}
 __REVIEWER_SECTIONS__
 \section*{Additional Changes}
-List any additional revisions not tied to a specific reviewer comment.
+Briefly list any additional revisions that were not tied to a specific reviewer comment. If there are no such changes, this section can be removed.
 \end{document}
 """
 

@@ -231,7 +231,7 @@ async function runLatexdiff() {
     old_project:   document.getElementById('ld-old').value.trim(),
     new_project:   document.getElementById('ld-new').value.trim(),
     main_tex:      document.getElementById('ld-main').value.trim(),
-    bib:           bibVal || null,
+    bib:           bibVal,
     latexdiff_engine: engine,
     use_docker:    engine === 'docker',
     confirm_online_upload: document.getElementById('ld-online-confirm').checked,

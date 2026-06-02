@@ -246,35 +246,43 @@
       <div class="card-body">
         <div class="form-row">
           <label>Manuscript title</label>
-          <input type="text" id="rv-title" placeholder="Full Manuscript Title">
+          <input type="text" id="rv-title" value="Manuscript Title Here">
         </div>
         <div class="form-row">
           <label>Journal name</label>
-          <input type="text" id="rv-journal" placeholder="Journal Name">
+          <input type="text" id="rv-journal" value="Journal Name Here">
         </div>
         <div class="form-row">
           <label>Submission ID</label>
-          <input type="text" id="rv-id" placeholder="XXXX">
+          <input type="text" id="rv-id" value="XXXX">
         </div>
         <div class="form-row">
           <label>Corresponding author email</label>
-          <input type="text" id="rv-email" placeholder="email@domain.com">
+          <input type="text" id="rv-email" value="email@domain.com">
         </div>
         <div class="form-row">
           <label>Authors <span class="hint">(JSON — e.g. [{"name":"A","affils":[1],"corresponding":true}])</span></label>
-          <textarea id="rv-authors" rows="3">[{"name": "Author One", "affils": [1], "corresponding": true},{"name": "Author Two", "affils": [2], "corresponding": false}]</textarea>
+          <textarea id="rv-authors" rows="4">[
+  {"name": "Author One", "affils": [1], "corresponding": true},
+  {"name": "Author Two", "affils": [2], "corresponding": false},
+  {"name": "Author Three", "affils": [3], "corresponding": false}
+]</textarea>
         </div>
         <div class="form-row">
           <label>Affiliations <span class="hint">(JSON — e.g. {"1":"Affil One","2":"Affil Two"})</span></label>
-          <textarea id="rv-affils" rows="2">{"1": "Affiliation One", "2": "Affiliation Two"}</textarea>
+          <textarea id="rv-affils" rows="4">{
+  "1": "Affiliation One",
+  "2": "Affiliation Two",
+  "3": "Affiliation Three"
+}</textarea>
         </div>
         <div class="form-row">
           <label>Comments per reviewer <span class="hint">(JSON — e.g. {"1":2,"2":3})</span></label>
-          <input type="text" id="rv-counts" value='{"1": 2, "2": 2}'>
+          <input type="text" id="rv-counts" value='{"1": 2, "2": 2, "3": 2}'>
         </div>
         <div class="form-row">
           <label>Output .tex file path</label>
-          <input type="text" id="rv-output" placeholder="response_to_reviewers_template.tex">
+          <input type="text" id="rv-output" value="response_to_reviewers_template.tex">
         </div>
         <button class="btn-run" onclick="runReviewerTemplate()">Generate Template</button>
         <div class="result-box" id="rv-result"></div>
@@ -304,10 +312,11 @@
         <div class="form-row">
           <label>Bibliography mode</label>
           <select id="ld-bib">
+            <option value="none" selected>none</option>
             <option value="bibtex">bibtex</option>
             <option value="biber">biber</option>
-            <option value="">none</option>
           </select>
+          <p class="hint">Use <code>none</code> unless both old and new projects include the needed <code>.bib</code> files.</p>
         </div>
         <div class="form-row">
           <label>Workspace folder</label>
@@ -320,6 +329,7 @@
             <option value="local">Local MiKTeX latexdiff</option>
             <option value="docker">Docker git-latexdiff-web</option>
           </select>
+          <p class="hint">Docker mode uses Docker Hub image <code>am009/latexdiff-web-worker</code>. Pre-download with <code>docker pull am009/latexdiff-web-worker</code>.</p>
         </div>
         <div class="form-row">
           <label>Online latexdiff URL</label>
@@ -404,39 +414,71 @@
           <textarea id="sd-config" rows="18" spellcheck="false">{
   "journal_name": "[Journal Name]",
   "editor_name": "[Editor Name]",
-  "manuscript_type": "[Research Article]",
+  "manuscript_type": "[Research Article / Review Article / Short Communication]",
   "double_blind": true,
-  "manuscript_id": "[MS-ID]",
+  "clean_output_folder": true,
+
+  "manuscript_id": "[Manuscript ID assigned by the journal]",
   "paper_title": "[Full Manuscript Title]",
-  "short_title": "[Short Title]",
-  "abstract_text": "[Abstract here.]",
-  "keywords": ["keyword1", "keyword2"],
-  "corresponding_author": "[Name]",
-  "corresponding_email": "[email]",
-  "corresponding_address": "[Address]",
+  "short_title": "[Short Running Title]",
+  "abstract_text": "[Paste the manuscript abstract here.]",
+  "keywords": ["[Keyword 1]", "[Keyword 2]", "[Keyword 3]"],
+
+  "corresponding_author": "[Corresponding Author Name]",
+  "corresponding_email": "[corresponding.author@example.com]",
+  "corresponding_address": "[Department, Institution, Street Address, City, Country]",
+
   "authors": [
-    {"name": "[Author One]", "affiliation": "[Affil]", "email": "[e]", "orcid": "[0000]",
-     "contribution": "[Conceptualization]",
-     "financial_conflict": "None declared", "personal_conflict": "None declared",
-     "ip_conflict": "None declared", "other_conflict": "None declared"}
+    {
+      "name": "[Author One]",
+      "affiliation": "[Department, Institution, City, Country]",
+      "email": "[author.one@example.com]",
+      "orcid": "[0000-0000-0000-0000]",
+      "contribution": "[Conceptualization; Methodology; Writing - original draft]",
+      "financial_conflict": "None declared",
+      "personal_conflict": "None declared",
+      "ip_conflict": "None declared",
+      "other_conflict": "None declared"
+    }
   ],
-  "cover_letter_body": ["[Para 1]", "[Para 2]"],
-  "originality_statement": "[We confirm this manuscript is original...]",
-  "revision_opening": "[We thank the reviewers...]",
-  "revised_confirmation": "[All authors approved the revised version...]",
-  "highlights": [{"text": "[Finding 1]", "detail": "[Why it matters]"}],
-  "highlight_guidance": "[3-5 bullets, 85 chars each]",
-  "conflict_of_interest_statement": "[No competing interests.]",
-  "funding_statement": "[No specific grant.]",
-  "data_availability_statement": "[Data available on request.]",
-  "funding_sources": [{"funder": "[Funder]", "grant": "[Grant]", "recipient": "[Initials]", "role": "No role"}],
-  "data_repository": "[Zenodo]",
-  "data_accession": "[DOI]",
-  "data_access_conditions": "[Open access]",
-  "data_license": "[CC-BY-4.0]",
-  "data_contact": "[email]",
-  "suggested_reviewers": [{"name": "[Name]", "email": "[e]", "institution": "[Inst]", "reason": "[Expertise]", "conflict_check": "No conflict"}],
-  "opposed_reviewers": [{"name": "[Name]", "institution": "[Inst]", "reason": "[Reason]"}]
+
+  "cover_letter_body": [
+    "[Briefly state what the manuscript reports and why it is suitable for the journal.]",
+    "[State the novelty and significance, and the intended readership.]"
+  ],
+  "originality_statement": "[We confirm that this manuscript is original, has not been published previously, and is not under consideration elsewhere. All authors have read and approved the submitted version, and all necessary ethical approvals and disclosures are included.]",
+
+  "revision_opening": "[We thank the editor and reviewers for their constructive feedback. All comments have been carefully addressed, and a detailed point-by-point response is provided in the accompanying document.]",
+  "revised_confirmation": "[We confirm that all authors have approved the revised version and that all ethical requirements remain satisfied.]",
+
+  "highlights": [
+    {"text": "[Highlight 1: concise finding.]", "detail": "[Why this finding matters.]"},
+    {"text": "[Highlight 2: concise method/result.]", "detail": "[What this adds.]"},
+    {"text": "[Highlight 3: concise implication.]", "detail": "[Who benefits or why it is important.]"}
+  ],
+  "highlight_guidance": "[Check the journal limit, often 3-5 bullets and sometimes 85 characters per bullet.]",
+
+  "conflict_of_interest_statement": "[The authors declare that they have no known competing financial interests or personal relationships that could have appeared to influence the work reported in this paper.]",
+  "funding_statement": "[This research received no specific grant from any funding agency in the public, commercial, or not-for-profit sectors.]",
+  "data_availability_statement": "[Data will be made available on reasonable request / Data are available at DOI or repository URL / No data were used for the research described in the article.]",
+  "ethics_statement": "[Ethical approval was not required for this study / Provide approval committee name and approval number.]",
+  "acknowledgements": "[Add acknowledgements here, or write: Not applicable.]",
+
+  "funding_sources": [
+    {"funder": "[Funder name or Not applicable]", "grant": "[Grant number]", "recipient": "[Author initials]", "role": "[No role / describe role]"}
+  ],
+  "data_repository": "[Repository name or Not applicable]",
+  "data_accession": "[DOI, accession number, or Not applicable]",
+  "data_access_conditions": "[Open access / reasonable request / restricted / not applicable]",
+  "data_license": "[License or Not applicable]",
+  "data_contact": "[corresponding.author@example.com]",
+
+  "suggested_reviewers": [
+    {"name": "[Reviewer Name]", "email": "[reviewer@example.com]", "institution": "[Institution]", "reason": "[Relevant expertise]", "conflict_check": "No known conflict"}
+  ],
+  "opposed_reviewers": [
+    {"name": "[Reviewer Name]", "institution": "[Institution]", "reason": "[Reason for exclusion, if any]"}
+  ]
 }</textarea>
         </div>
         <button class="btn-run" onclick="runSubmissionDocs()">Generate Documents</button>
