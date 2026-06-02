@@ -13,6 +13,7 @@ Pub Assist is a notebook-based workflow for preparing LaTeX manuscripts for jour
 - **Reviewer-response template**: Generate a structured LaTeX response-to-reviewers file.
 - **DOI to BibTeX**: Fetch BibTeX entries from a list of DOIs.
 - **LaTeX diff report**: Generate `diff.pdf` from old and new manuscript projects using local MiKTeX/latexdiff or Docker.
+- **Submission Word documents**: Generate cover letter, highlights, conflict of interest, title files, and other journal submission `.docx` files from paper-specific inputs.
 
 ## Notebooks
 
@@ -50,11 +51,16 @@ Pub Assist is a notebook-based workflow for preparing LaTeX manuscripts for jour
     - Can use `am009/git-latexdiff-web` through Docker when `use_docker = True`.
     - Default style shows blue added text and red struck-through deleted text.
 
-11. `Generate_BibTeX_from_DOIs.ipynb`
+11. `Step_9_generate_submission_word_documents.ipynb`
+    - Generates Word files for journal submission materials.
+    - Includes original and revised cover letters, highlights, conflict of interest, author declaration, funding statement, data availability statement, reviewer suggestions, submission checklist, and title files.
+    - Creates separate blinded and author-containing title files when `double_blind = True`.
+
+12. `Generate_BibTeX_from_DOIs.ipynb`
     - Fetches BibTeX entries from DOI strings or DOI URLs.
     - Writes one BibTeX field per line for readability.
 
-12. `copy_style_files_to_folder.ipynb`
+13. `copy_style_files_to_folder.ipynb`
     - Copies journal class/style files into a manuscript project.
 
 ## Quick Start
@@ -66,6 +72,7 @@ Pub Assist is a notebook-based workflow for preparing LaTeX manuscripts for jour
 5. For `Step_8_generate_latexdiff_report.ipynb`, install MiKTeX with `latexdiff`, `pdflatex`, and `bibtex`/`biber`.
 6. MiKTeX's `latexdiff` requires Perl. Install Perl if MiKTeX reports that the script engine `perl` is missing.
 7. Docker Desktop is optional and is needed only if `use_docker = True`.
+8. For `Step_9_generate_submission_word_documents.ipynb`, install `python-docx` if your environment does not already have it.
 
 ## Generating a LaTeX Diff PDF
 
@@ -221,6 +228,33 @@ output_bib_file = "references_from_dois.bib"
 
 Then run the notebook. It first tries DOI content negotiation through `doi.org`, then falls back to Crossref. Generated entries are formatted with one BibTeX field per line.
 
+## Generating Submission Word Documents
+
+Use `Step_9_generate_submission_word_documents.ipynb`.
+
+Edit the placeholder paper metadata in the first code cell:
+
+```python
+journal_name = "[Journal Name]"
+paper_title = "[Full Manuscript Title]"
+double_blind = True
+clean_output_folder = True
+authors = [...]
+highlights = [...]
+```
+
+Then run the notebook. It writes `.docx` files into:
+
+```text
+submission_word_documents/
+```
+
+When `double_blind = True`, the notebook writes both `blinded_title_file.docx` and `authors_title_file.docx`. When `double_blind = False`, it writes a single `title_file.docx`.
+
+The packet includes both `original_cover_letter.docx` and `revised_cover_letter.docx`. The revised cover letter has placeholders for manuscript ID, revision round, decision date, response-to-reviewers file, major revision changes, and resubmission confirmations.
+
+Set `clean_output_folder = True` to remove older generated `.docx` files from `submission_word_documents/` before writing the new packet.
+
 ## Project Structure
 
 ```text
@@ -237,7 +271,7 @@ pub_assist/
 |-- Step_6_beautification.ipynb
 |-- Step_7_generate_reviewer_response_template.ipynb
 |-- Step_8_generate_latexdiff_report.ipynb
-|-- Step_8_generate_latexdiff_report.ipynb
+|-- Step_9_generate_submission_word_documents.ipynb
 |-- Generate_BibTeX_from_DOIs.ipynb
 |-- copy_style_files_to_folder.ipynb
 |-- Resources/
@@ -245,5 +279,6 @@ pub_assist/
 |   `-- symbols.md
 `-- python_files/
     |-- beautify.py
-    `-- latexdiff_web.py
+    |-- latexdiff_web.py
+    `-- submission_docs.py
 ```

@@ -4,3 +4,6 @@ Latex_projects/*
 Latex_projects_arXiv/*
 Projects/*
 latexdiff_runs/*
+submission_word_documents/*
+submission_word_documents_rendered/*
+__pycache__/
