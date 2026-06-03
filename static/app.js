@@ -46,6 +46,10 @@ function csvToList(str) {
   return str.split(',').map(s => s.trim()).filter(Boolean);
 }
 
+function splitDoiInputs(str) {
+  return str.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
+}
+
 const OVERLEAF_PROJECTS_URL = 'https://www.overleaf.com/project';
 let createdProjectZipPath = '';
 
@@ -360,8 +364,7 @@ async function runLatexdiff() {
 async function runDoi2Bib() {
   const btn = event.target; btn.disabled = true;
   updateBibtexPreview('');
-  const dois = document.getElementById('doi-list').value
-    .split('\n').map(s => s.trim()).filter(Boolean);
+  const dois = splitDoiInputs(document.getElementById('doi-list').value);
   const savedHtmlFiles = document.getElementById('doi-html-files').value
     .split('\n').map(s => s.trim()).filter(Boolean);
   const data = await post('doi2bib', {

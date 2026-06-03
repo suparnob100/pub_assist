@@ -518,6 +518,14 @@ class Doi2BibRequest(BaseModel):
     pause_seconds: float = 0.2
 
 
+def _split_doi_inputs(values):
+    for value in values or []:
+        for item in str(value or "").replace(",", "\n").splitlines():
+            item = item.strip()
+            if item:
+                yield item
+
+
 @app.post("/api/doi2bib")
 async def api_doi2bib(req: Doi2BibRequest):
     jid = _new_job()
@@ -538,10 +546,7 @@ async def api_doi2bib(req: Doi2BibRequest):
                     "resolved_url": extracted["final_url"],
                 })
 
-            for raw in req.dois:
-                raw = str(raw or "").strip()
-                if not raw:
-                    continue
+            for raw in _split_doi_inputs(req.dois):
                 try:
                     extracted = extract_doi_from_journal_url(raw, req.timeout, req.contact_email)
                     add_resolved(raw, extracted)
