@@ -23,24 +23,31 @@
 <div class="layout">
   <!-- Sidebar nav -->
   <nav class="sidebar">
-    <div class="sidebar-section-label">Prepare</div>
+    <div class="sidebar-section-label">Help</div>
+    <a href="#how-it-works" class="nav-item">How it works</a>
+
+    <div class="sidebar-section-label">Write</div>
     <a href="#step-create" class="nav-item">1. New Project</a>
-    <a href="#step-modularize" class="nav-item">Modularize</a>
-    <a href="#step-onesentence" class="nav-item">One Sentence / Line</a>
     <a href="#step-reassemble" class="nav-item">2. Reassemble</a>
+
+    <div class="sidebar-section-label">Format</div>
     <a href="#step-clean" class="nav-item">3. Clean LaTeX</a>
-    <a href="#step-floats" class="nav-item">4. Review Floats</a>
-    <a href="#step-figures" class="nav-item">5. Collect Figures</a>
-    <a href="#step-beautify" class="nav-item">6. Beautify</a>
+    <a href="#step-beautify" class="nav-item">4. Beautify</a>
 
     <div class="sidebar-section-label">Review</div>
-    <a href="#step-reviewer" class="nav-item">7. Reviewer Template</a>
-    <a href="#step-latexdiff" class="nav-item">8. LaTeX Diff</a>
+    <a href="#step-floats" class="nav-item">5. Review Floats</a>
+    <a href="#step-reviewer" class="nav-item">6. Reviewer Template</a>
+    <a href="#step-latexdiff" class="nav-item">7. LaTeX Diff</a>
 
     <div class="sidebar-section-label">Submit</div>
+    <a href="#step-figures" class="nav-item">8. Collect Figures</a>
+    <a href="#step-submissiondocs" class="nav-item">9. Submission Docs</a>
+
+    <div class="sidebar-section-label">Utilities</div>
+    <a href="#step-modularize" class="nav-item">Modularize</a>
+    <a href="#step-onesentence" class="nav-item">One Sentence / Line</a>
     <a href="#step-doi2bib" class="nav-item">DOI → BibTeX</a>
     <a href="#step-copystyles" class="nav-item">Copy Style Files</a>
-    <a href="#step-submissiondocs" class="nav-item">9. Submission Docs</a>
   </nav>
 
   <!-- Main content -->
@@ -98,46 +105,6 @@
       </div>
     </section>
 
-    <!-- Modularize -->
-    <section class="tool-card" id="step-modularize">
-      <div class="card-header">
-        <span class="card-title">Modularize LaTeX File</span>
-        <span class="card-desc">Split a monolithic .tex file into per-section files under a <code>sections/</code> folder.</span>
-      </div>
-      <div class="card-body">
-        <div class="form-row">
-          <label>Project folder</label>
-          <input type="text" id="mod-folder" placeholder="/path/to/MyPaper">
-        </div>
-        <div class="form-row">
-          <label>Main .tex filename</label>
-          <input type="text" id="mod-file" placeholder="Manuscript_main.tex">
-        </div>
-        <button class="btn-run" onclick="runModularize()">Modularize</button>
-        <div class="result-box" id="mod-result"></div>
-      </div>
-    </section>
-
-    <!-- One sentence per line -->
-    <section class="tool-card" id="step-onesentence">
-      <div class="card-header">
-        <span class="card-title">One Sentence per Line</span>
-        <span class="card-desc">Reformat .tex files so each sentence starts on a new line — cleaner Git diffs.</span>
-      </div>
-      <div class="card-body">
-        <div class="form-row">
-          <label>Folder containing .tex files</label>
-          <input type="text" id="os-dir" placeholder="/path/to/MyPaper">
-        </div>
-        <div class="form-row">
-          <label>Output folder <span class="hint">(blank = same folder)</span></label>
-          <input type="text" id="os-outdir" placeholder="">
-        </div>
-        <button class="btn-run" onclick="runOneSentence()">Process</button>
-        <div class="result-box" id="os-result"></div>
-      </div>
-    </section>
-
     <!-- Step 2: Reassemble -->
     <section class="tool-card" id="step-reassemble">
       <div class="card-header">
@@ -181,56 +148,10 @@
       </div>
     </section>
 
-    <!-- Step 4: Review Floats -->
-    <section class="tool-card" id="step-floats">
-      <div class="card-header">
-        <span class="card-step">Step 4</span>
-        <span class="card-title">Review Floats</span>
-        <span class="card-desc">Extract figure, table, and equation environments into a <code>*_floats_only.tex</code> file.</span>
-      </div>
-      <div class="card-body">
-        <div class="form-row">
-          <label>Project folder</label>
-          <input type="text" id="fl-folder" placeholder="/path/to/MyPaper">
-        </div>
-        <div class="form-row">
-          <label>.tex filename</label>
-          <input type="text" id="fl-file" placeholder="Manuscript_main.tex">
-        </div>
-        <div class="form-row">
-          <label>Environments <span class="hint">(comma-separated, leave blank for defaults)</span></label>
-          <input type="text" id="fl-envs" placeholder="equation, align, table, figure">
-        </div>
-        <button class="btn-run" onclick="runReviewFloats()">Extract Floats</button>
-        <div class="result-box" id="fl-result"></div>
-      </div>
-    </section>
-
-    <!-- Step 5: Collect Figures -->
-    <section class="tool-card" id="step-figures">
-      <div class="card-header">
-        <span class="card-step">Step 5</span>
-        <span class="card-title">Collect Figures</span>
-        <span class="card-desc">Copy all referenced figures into a <code>Figures_/</code> folder and update paths.</span>
-      </div>
-      <div class="card-body">
-        <div class="form-row">
-          <label>Project folder</label>
-          <input type="text" id="fig-folder" placeholder="/path/to/MyPaper">
-        </div>
-        <div class="form-row">
-          <label>.tex filename</label>
-          <input type="text" id="fig-file" placeholder="Manuscript_main.tex">
-        </div>
-        <button class="btn-run" onclick="runCollectFigures()">Collect Figures</button>
-        <div class="result-box" id="fig-result"></div>
-      </div>
-    </section>
-
-    <!-- Step 6: Beautify -->
+    <!-- Step 4: Beautify -->
     <section class="tool-card" id="step-beautify">
       <div class="card-header">
-        <span class="card-step">Step 6</span>
+        <span class="card-step">Step 4</span>
         <span class="card-title">Beautify LaTeX</span>
         <span class="card-desc">Apply indentation and comment alignment. Writes a <code>*_beautiful.tex</code> file.</span>
       </div>
@@ -252,10 +173,35 @@
       </div>
     </section>
 
-    <!-- Step 7: Reviewer Response Template -->
+    <!-- Step 5: Review Floats -->
+    <section class="tool-card" id="step-floats">
+      <div class="card-header">
+        <span class="card-step">Step 5</span>
+        <span class="card-title">Review Floats</span>
+        <span class="card-desc">Extract figure, table, and equation environments into a <code>*_floats_only.tex</code> file.</span>
+      </div>
+      <div class="card-body">
+        <div class="form-row">
+          <label>Project folder</label>
+          <input type="text" id="fl-folder" placeholder="/path/to/MyPaper">
+        </div>
+        <div class="form-row">
+          <label>.tex filename</label>
+          <input type="text" id="fl-file" placeholder="Manuscript_main.tex">
+        </div>
+        <div class="form-row">
+          <label>Environments <span class="hint">(comma-separated, leave blank for defaults)</span></label>
+          <input type="text" id="fl-envs" placeholder="equation, align, table, figure">
+        </div>
+        <button class="btn-run" onclick="runReviewFloats()">Extract Floats</button>
+        <div class="result-box" id="fl-result"></div>
+      </div>
+    </section>
+
+    <!-- Step 6: Reviewer Response Template -->
     <section class="tool-card" id="step-reviewer">
       <div class="card-header">
-        <span class="card-step">Step 7</span>
+        <span class="card-step">Step 6</span>
         <span class="card-title">Reviewer Response Template</span>
         <span class="card-desc">Generate a structured LaTeX response-to-reviewers file.</span>
       </div>
@@ -305,10 +251,10 @@
       </div>
     </section>
 
-    <!-- Step 8: LaTeX Diff -->
+    <!-- Step 7: LaTeX Diff -->
     <section class="tool-card" id="step-latexdiff">
       <div class="card-header">
-        <span class="card-step">Step 8</span>
+        <span class="card-step">Step 7</span>
         <span class="card-title">LaTeX Diff</span>
         <span class="card-desc">Generate a <code>diff.pdf</code> comparing old and new manuscript versions.</span>
       </div>
@@ -360,64 +306,24 @@
       </div>
     </section>
 
-    <!-- DOI → BibTeX -->
-    <section class="tool-card" id="step-doi2bib">
+    <!-- Step 8: Collect Figures -->
+    <section class="tool-card" id="step-figures">
       <div class="card-header">
-        <span class="card-title">DOI → BibTeX</span>
-        <span class="card-desc">Fetch BibTeX entries from DOIs, DOI URLs, journal article URLs, or saved article HTML files.</span>
+        <span class="card-step">Step 8</span>
+        <span class="card-title">Collect Figures</span>
+        <span class="card-desc">Copy all referenced figures into a <code>Figures_/</code> folder and update paths.</span>
       </div>
       <div class="card-body">
         <div class="form-row">
-          <label>DOIs or article URLs <span class="hint">(one per line)</span></label>
-          <textarea id="doi-list" rows="6" placeholder="10.1038/nphys1170&#10;https://doi.org/10.1145/3375630&#10;https://journal.example.com/article/..."></textarea>
+          <label>Project folder</label>
+          <input type="text" id="fig-folder" placeholder="/path/to/MyPaper">
         </div>
         <div class="form-row">
-          <label>Saved article HTML files <span class="hint">(optional, one per line)</span></label>
-          <textarea id="doi-html-files" rows="3" placeholder="C:\Users\You\Downloads\saved_article.html"></textarea>
+          <label>.tex filename</label>
+          <input type="text" id="fig-file" placeholder="Manuscript_main.tex">
         </div>
-        <div class="form-row">
-          <label>Reference .bib file</label>
-          <input type="text" id="doi-output" value="references_from_dois.bib">
-        </div>
-        <div class="form-row">
-          <label>Contact email <span class="hint">(polite for doi.org requests)</span></label>
-          <input type="text" id="doi-email" placeholder="your@email.com">
-        </div>
-        <div class="form-row-check">
-          <input type="checkbox" id="doi-append" checked>
-          <label for="doi-append">Append to existing file</label>
-        </div>
-        <p class="hint">If a line is a journal article URL, Pub Assist saves that page to a temporary local HTML file, extracts the DOI, then deletes the temporary file. If a publisher blocks automated reads, save the article page from your browser with Ctrl+S or a save-page extension such as <a href="https://chromewebstore.google.com/detail/save-page-we/dhhpefjklgkmgeafimnjhojgjamoafof" target="_blank" rel="noopener noreferrer">Save Page WE</a>, then select the saved HTML file above. Generated BibTeX appears below and is written to the selected file.</p>
-        <button class="btn-run" onclick="runDoi2Bib()">Fetch / Append BibTeX</button>
-        <div class="result-box" id="doi-result"></div>
-        <div class="form-row">
-          <label>Generated BibTeX preview</label>
-          <textarea id="doi-preview" rows="10" readonly placeholder="Generated BibTeX entries will appear here after the run."></textarea>
-        </div>
-      </div>
-    </section>
-
-    <!-- Copy Style Files -->
-    <section class="tool-card" id="step-copystyles">
-      <div class="card-header">
-        <span class="card-title">Copy Style Files</span>
-        <span class="card-desc">Copy required <code>.sty</code> files from MiKTeX, TeX Live, or MacTeX into the project folder.</span>
-      </div>
-      <div class="card-body">
-        <div class="form-row">
-          <label>Main .tex file</label>
-          <input type="text" id="cs-file" placeholder="/path/to/MyPaper/Manuscript_main.tex">
-        </div>
-        <div class="form-row">
-          <label>Output folder</label>
-          <input type="text" id="cs-out" placeholder="/path/to/MyPaper/packages_used">
-        </div>
-        <div class="form-row">
-          <label>TeX latex/ path <span class="hint">(blank = auto-detect via kpsewhich or common TeX roots)</span></label>
-          <input type="text" id="cs-miktex" placeholder="/usr/share/texlive/texmf-dist/tex/latex">
-        </div>
-        <button class="btn-run" onclick="runCopyStyles()">Copy Styles</button>
-        <div class="result-box" id="cs-result"></div>
+        <button class="btn-run" onclick="runCollectFigures()">Collect Figures</button>
+        <div class="result-box" id="fig-result"></div>
       </div>
     </section>
 
@@ -508,6 +414,107 @@
         </div>
         <button class="btn-run" onclick="runSubmissionDocs()">Generate Documents</button>
         <div class="result-box" id="sd-result"></div>
+      </div>
+    </section>
+
+    <!-- Modularize -->
+    <section class="tool-card" id="step-modularize">
+      <div class="card-header">
+        <span class="card-title">Modularize LaTeX File</span>
+        <span class="card-desc">Split a monolithic .tex file into per-section files under a <code>sections/</code> folder.</span>
+      </div>
+      <div class="card-body">
+        <div class="form-row">
+          <label>Project folder</label>
+          <input type="text" id="mod-folder" placeholder="/path/to/MyPaper">
+        </div>
+        <div class="form-row">
+          <label>Main .tex filename</label>
+          <input type="text" id="mod-file" placeholder="Manuscript_main.tex">
+        </div>
+        <button class="btn-run" onclick="runModularize()">Modularize</button>
+        <div class="result-box" id="mod-result"></div>
+      </div>
+    </section>
+
+    <!-- One sentence per line -->
+    <section class="tool-card" id="step-onesentence">
+      <div class="card-header">
+        <span class="card-title">One Sentence per Line</span>
+        <span class="card-desc">Reformat .tex files so each sentence starts on a new line — cleaner Git diffs.</span>
+      </div>
+      <div class="card-body">
+        <div class="form-row">
+          <label>Folder containing .tex files</label>
+          <input type="text" id="os-dir" placeholder="/path/to/MyPaper">
+        </div>
+        <div class="form-row">
+          <label>Output folder <span class="hint">(blank = same folder)</span></label>
+          <input type="text" id="os-outdir" placeholder="">
+        </div>
+        <button class="btn-run" onclick="runOneSentence()">Process</button>
+        <div class="result-box" id="os-result"></div>
+      </div>
+    </section>
+
+    <!-- DOI → BibTeX -->
+    <section class="tool-card" id="step-doi2bib">
+      <div class="card-header">
+        <span class="card-title">DOI → BibTeX</span>
+        <span class="card-desc">Fetch BibTeX entries from DOIs, DOI URLs, journal article URLs, or saved article HTML files.</span>
+      </div>
+      <div class="card-body">
+        <div class="form-row">
+          <label>DOIs or article URLs <span class="hint">(one per line)</span></label>
+          <textarea id="doi-list" rows="6" placeholder="10.1038/nphys1170&#10;https://doi.org/10.1145/3375630&#10;https://journal.example.com/article/..."></textarea>
+        </div>
+        <div class="form-row">
+          <label>Saved article HTML files <span class="hint">(optional, one per line)</span></label>
+          <textarea id="doi-html-files" rows="3" placeholder="C:\Users\You\Downloads\saved_article.html"></textarea>
+        </div>
+        <div class="form-row">
+          <label>Reference .bib file</label>
+          <input type="text" id="doi-output" value="references_from_dois.bib">
+        </div>
+        <div class="form-row">
+          <label>Contact email <span class="hint">(polite for doi.org requests)</span></label>
+          <input type="text" id="doi-email" placeholder="your@email.com">
+        </div>
+        <div class="form-row-check">
+          <input type="checkbox" id="doi-append" checked>
+          <label for="doi-append">Append to existing file</label>
+        </div>
+        <p class="hint">If a line is a journal article URL, Pub Assist saves that page to a temporary local HTML file, extracts the DOI, then deletes the temporary file. If a publisher blocks automated reads, save the article page from your browser with Ctrl+S or a save-page extension such as <a href="https://chromewebstore.google.com/detail/save-page-we/dhhpefjklgkmgeafimnjhojgjamoafof" target="_blank" rel="noopener noreferrer">Save Page WE</a>, then select the saved HTML file above. Generated BibTeX appears below and is written to the selected file.</p>
+        <button class="btn-run" onclick="runDoi2Bib()">Fetch / Append BibTeX</button>
+        <div class="result-box" id="doi-result"></div>
+        <div class="form-row">
+          <label>Generated BibTeX preview</label>
+          <textarea id="doi-preview" rows="10" readonly placeholder="Generated BibTeX entries will appear here after the run."></textarea>
+        </div>
+      </div>
+    </section>
+
+    <!-- Copy Style Files -->
+    <section class="tool-card" id="step-copystyles">
+      <div class="card-header">
+        <span class="card-title">Copy Style Files</span>
+        <span class="card-desc">Copy required <code>.sty</code> files from MiKTeX, TeX Live, or MacTeX into the project folder.</span>
+      </div>
+      <div class="card-body">
+        <div class="form-row">
+          <label>Main .tex file</label>
+          <input type="text" id="cs-file" placeholder="/path/to/MyPaper/Manuscript_main.tex">
+        </div>
+        <div class="form-row">
+          <label>Output folder</label>
+          <input type="text" id="cs-out" placeholder="/path/to/MyPaper/packages_used">
+        </div>
+        <div class="form-row">
+          <label>TeX latex/ path <span class="hint">(blank = auto-detect via kpsewhich or common TeX roots)</span></label>
+          <input type="text" id="cs-miktex" placeholder="/usr/share/texlive/texmf-dist/tex/latex">
+        </div>
+        <button class="btn-run" onclick="runCopyStyles()">Copy Styles</button>
+        <div class="result-box" id="cs-result"></div>
       </div>
     </section>
 
