@@ -22,7 +22,7 @@ async function post(endpoint, body) {
   return resp.json();
 }
 
-async function pollJob(jobId, resultId, btnId) {
+async function pollJob(jobId, resultId, btnId, onDone) {
   const btn = document.getElementById(btnId);
   while (true) {
     await new Promise(r => setTimeout(r, 1200));
@@ -30,7 +30,8 @@ async function pollJob(jobId, resultId, btnId) {
     if (data.status === 'done') {
       if (btn) btn.disabled = false;
       showResult(resultId, data.result, true);
-      return;
+      if (onDone) onDone(data.result);
+      return data.result;
     }
     if (data.status === 'error') {
       if (btn) btn.disabled = false;
@@ -45,22 +46,36 @@ function csvToList(str) {
   return str.split(',').map(s => s.trim()).filter(Boolean);
 }
 
+const OVERLEAF_PROJECTS_URL = 'https://www.overleaf.com/project';
+let createdProjectZipPath = '';
+
 /* ── Open-folder buttons ───────────────────────────────────────────────── */
-/* id -> base folder field to join with when the value is a bare filename */
-const PATH_FIELDS = {
-  'create-dir': null,
-  'mod-folder': null, 'mod-file': 'mod-folder',
-  'os-dir': null, 'os-outdir': null,
-  're-folder': null, 're-file': 're-folder',
-  'clean-file': null,
-  'fl-folder': null, 'fl-file': 'fl-folder',
-  'fig-folder': null, 'fig-file': 'fig-folder',
-  'bea-folder': null, 'bea-file': 'bea-folder',
-  'rv-output': null,
-  'ld-old': null, 'ld-new': null, 'ld-main': 'ld-new', 'ld-workspace': null,
-  'doi-output': null,
-  'cs-file': null, 'cs-out': null, 'cs-miktex': null,
-  'sd-outfolder': null,
+const PATH_BUTTONS = {
+  'create-dir': { action: 'select', mode: 'folder', title: 'Select project folder' },
+  'mod-folder': { action: 'select', mode: 'folder', title: 'Select project folder' },
+  'mod-file': { action: 'select', mode: 'file', fileKind: 'tex', base: 'mod-folder', title: 'Select main .tex file' },
+  'os-dir': { action: 'select', mode: 'folder', title: 'Select folder containing .tex files' },
+  'os-outdir': { action: 'open' },
+  're-folder': { action: 'select', mode: 'folder', title: 'Select project folder' },
+  're-file': { action: 'select', mode: 'file', fileKind: 'tex', base: 're-folder', title: 'Select main .tex file' },
+  'clean-file': { action: 'select', mode: 'file', fileKind: 'tex', title: 'Select LaTeX file' },
+  'fl-folder': { action: 'select', mode: 'folder', title: 'Select project folder' },
+  'fl-file': { action: 'select', mode: 'file', fileKind: 'tex', base: 'fl-folder', title: 'Select .tex file' },
+  'fig-folder': { action: 'select', mode: 'folder', title: 'Select project folder' },
+  'fig-file': { action: 'select', mode: 'file', fileKind: 'tex', base: 'fig-folder', title: 'Select .tex file' },
+  'bea-folder': { action: 'select', mode: 'folder', title: 'Select project folder' },
+  'bea-file': { action: 'select', mode: 'file', fileKind: 'tex', base: 'bea-folder', title: 'Select .tex file' },
+  'rv-output': { action: 'open' },
+  'ld-old': { action: 'select', mode: 'file-or-folder', fileKind: 'zip', title: 'Select old project folder or zip' },
+  'ld-new': { action: 'select', mode: 'file-or-folder', fileKind: 'zip', title: 'Select new project folder or zip' },
+  'ld-main': { action: 'select', mode: 'file', fileKind: 'tex', base: 'ld-new', title: 'Select main .tex file in new project' },
+  'ld-workspace': { action: 'open' },
+  'doi-output': { action: 'select', mode: 'file', fileKind: 'bib', title: 'Select reference .bib file' },
+  'doi-html-files': { action: 'select', mode: 'file', fileKind: 'html', title: 'Select saved article HTML file', appendSelection: true },
+  'cs-file': { action: 'select', mode: 'file', fileKind: 'tex', title: 'Select main .tex file' },
+  'cs-out': { action: 'open' },
+  'cs-miktex': { action: 'select', mode: 'folder', title: 'Select TeX latex folder' },
+  'sd-outfolder': { action: 'open' },
 };
 
 function isAbsolutePath(v) {
@@ -68,19 +83,105 @@ function isAbsolutePath(v) {
 }
 
 async function openPath(id, base) {
-  let val = (document.getElementById(id).value || '').trim();
-  if (val && base && !isAbsolutePath(val)) {
-    const b = (document.getElementById(base).value || '').trim();
-    if (b) val = b.replace(/[\\/]+$/, '') + '/' + val;
-  }
+  let val = resolvedFieldPath(id, base);
   if (!val && base) val = (document.getElementById(base).value || '').trim();
   if (!val) { alert('Enter a path first.'); return; }
   const data = await post('open-folder', { path: val });
   if (data.status !== 'ok') alert(data.error || 'Could not open folder.');
 }
 
+function resolvedFieldPath(id, base) {
+  let val = (document.getElementById(id).value || '').trim();
+  if (val && base && !isAbsolutePath(val)) {
+    const b = (document.getElementById(base).value || '').trim();
+    if (b) val = b.replace(/[\\/]+$/, '') + '/' + val;
+  }
+  return val;
+}
+
+function splitPath(path) {
+  const parts = path.split(/[\\/]+/);
+  const name = parts.pop() || '';
+  const dir = path.slice(0, path.length - name.length).replace(/[\\/]+$/, '');
+  return { dir, name };
+}
+
+async function selectPath(id, config) {
+  const input = document.getElementById(id);
+  const base = config.base || null;
+  const baseInput = base ? document.getElementById(base) : null;
+  const initialPath = resolvedFieldPath(id, base) || (baseInput ? baseInput.value.trim() : '');
+  const data = await post('select-path', {
+    mode: config.mode || 'file',
+    title: config.title || 'Select path',
+    initial_path: initialPath,
+    file_kind: config.fileKind || '',
+  });
+  if (data.status !== 'ok') {
+    alert(data.error || 'Could not select path.');
+    return;
+  }
+  if (!data.path) return;
+
+  if (config.appendSelection) {
+    const lines = input.value.split('\n').map(s => s.trim()).filter(Boolean);
+    if (!lines.some(line => line.toLowerCase() === data.path.toLowerCase())) {
+      lines.push(data.path);
+    }
+    input.value = lines.join('\n');
+    return;
+  }
+
+  if (baseInput && config.mode === 'file') {
+    const selected = splitPath(data.path);
+    baseInput.value = selected.dir;
+    input.value = selected.name;
+  } else {
+    input.value = data.path;
+  }
+}
+
+function updateOverleafHelper(zipPath) {
+  const helper = document.getElementById('create-overleaf');
+  const pathEl = document.getElementById('create-zip-path');
+  const openBtn = document.getElementById('create-open-zip');
+  const copyBtn = document.getElementById('create-copy-zip');
+  createdProjectZipPath = zipPath || '';
+  if (!helper || !pathEl) return;
+  pathEl.textContent = createdProjectZipPath || 'No ZIP generated yet.';
+  if (openBtn) openBtn.disabled = !createdProjectZipPath;
+  if (copyBtn) copyBtn.disabled = !createdProjectZipPath;
+  helper.hidden = false;
+}
+
+async function openCreatedZipFolder() {
+  if (!createdProjectZipPath) {
+    alert('Create a project with the zip option enabled first.');
+    return;
+  }
+  const data = await post('open-folder', { path: createdProjectZipPath });
+  if (data.status !== 'ok') alert(data.error || 'Could not open ZIP folder.');
+}
+
+async function copyCreatedZipPath() {
+  if (!createdProjectZipPath) {
+    alert('Create a project with the zip option enabled first.');
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(createdProjectZipPath);
+    alert('ZIP path copied.');
+  } catch (e) {
+    window.prompt('Copy this ZIP path:', createdProjectZipPath);
+  }
+}
+
+function openOverleafProjects() {
+  window.open(OVERLEAF_PROJECTS_URL, '_blank', 'noopener,noreferrer');
+}
+
 function initPathButtons() {
-  for (const [id, base] of Object.entries(PATH_FIELDS)) {
+  for (const [id, config] of Object.entries(PATH_BUTTONS)) {
     const input = document.getElementById(id);
     if (!input || input.dataset.hasOpenBtn) continue;
     input.dataset.hasOpenBtn = '1';
@@ -91,9 +192,15 @@ function initPathButtons() {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'btn-open';
-    btn.title = 'Open this location in your file explorer';
-    btn.textContent = '\uD83D\uDCC2';
-    btn.addEventListener('click', () => openPath(id, base));
+    if (config.action === 'select') {
+      btn.title = config.title || 'Select path';
+      btn.textContent = '...';
+      btn.addEventListener('click', () => selectPath(id, config));
+    } else {
+      btn.title = 'Open this location in your file explorer';
+      btn.textContent = '\uD83D\uDCC2';
+      btn.addEventListener('click', () => openPath(id, config.base || null));
+    }
     wrap.appendChild(btn);
   }
 }
@@ -111,8 +218,10 @@ async function runCreateProject() {
   const data = await post('project/create', body);
   btn.disabled = false;
   if (data.status === 'ok') {
+    updateOverleafHelper(data.zip_path);
     showResult('create-result', data, true);
   } else {
+    updateOverleafHelper('');
     showResult('create-result', data.error, false);
   }
 }
@@ -250,17 +359,23 @@ async function runLatexdiff() {
 /* ── DOI → BibTeX ──────────────────────────────────────────────────────── */
 async function runDoi2Bib() {
   const btn = event.target; btn.disabled = true;
+  updateBibtexPreview('');
   const dois = document.getElementById('doi-list').value
+    .split('\n').map(s => s.trim()).filter(Boolean);
+  const savedHtmlFiles = document.getElementById('doi-html-files').value
     .split('\n').map(s => s.trim()).filter(Boolean);
   const data = await post('doi2bib', {
     dois,
+    saved_html_files: savedHtmlFiles,
     output_bib_file: document.getElementById('doi-output').value.trim(),
     contact_email:   document.getElementById('doi-email').value.trim(),
     append:          document.getElementById('doi-append').checked,
   });
   if (data.status === 'running') {
     showInfo('doi-result', `Job started (${data.job_id}). Fetching…`);
-    pollJob(data.job_id, 'doi-result', null).then(() => { btn.disabled = false; });
+    pollJob(data.job_id, 'doi-result', null, (result) => {
+      updateBibtexPreview(result && result.bibtex_text ? result.bibtex_text : '');
+    }).then(() => { btn.disabled = false; });
   } else {
     btn.disabled = false;
     showResult('doi-result', data.error || data, false);
@@ -268,6 +383,11 @@ async function runDoi2Bib() {
 }
 
 /* ── Copy Style Files ──────────────────────────────────────────────────── */
+function updateBibtexPreview(text) {
+  const preview = document.getElementById('doi-preview');
+  if (preview) preview.value = text || '';
+}
+
 async function runCopyStyles() {
   const btn = event.target; btn.disabled = true;
   const data = await post('copy-styles', {
@@ -314,4 +434,5 @@ document.addEventListener('scroll', updateActiveNav, { passive: true });
 
 /* ── Init ───────────────────────────────────────────────────────────────── */
 initPathButtons();
+updateOverleafHelper('');
 updateActiveNav();

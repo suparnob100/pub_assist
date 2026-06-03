@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pub Assist</title>
-<link rel="stylesheet" href="/static/style.css">
+<link rel="stylesheet" href="/static/style.css?v=20260603-bibmerge">
 </head>
 <body>
 <header>
@@ -79,6 +79,18 @@
         </div>
         <button class="btn-run" onclick="runCreateProject()">Create Project</button>
         <div class="result-box" id="create-result"></div>
+        <div class="overleaf-helper" id="create-overleaf">
+          <div class="overleaf-copy">
+            <strong>Overleaf upload</strong>
+            <span>Keep <code>Create zip archive</code> checked. After Step 1 creates the ZIP, open the ZIP folder, then in Overleaf choose <code>New Project</code> &gt; <code>Upload Project</code>.</span>
+            <code id="create-zip-path">No ZIP generated yet.</code>
+          </div>
+          <div class="button-row">
+            <button type="button" class="btn-secondary" id="create-open-zip" onclick="openCreatedZipFolder()" disabled>Open ZIP Folder</button>
+            <button type="button" class="btn-secondary" id="create-copy-zip" onclick="copyCreatedZipPath()" disabled>Copy ZIP Path</button>
+            <button type="button" class="btn-run" onclick="openOverleafProjects()">Open Overleaf</button>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -348,15 +360,19 @@
     <section class="tool-card" id="step-doi2bib">
       <div class="card-header">
         <span class="card-title">DOI → BibTeX</span>
-        <span class="card-desc">Fetch BibTeX entries from a list of DOIs via doi.org / Crossref.</span>
+        <span class="card-desc">Fetch BibTeX entries from DOIs, DOI URLs, journal article URLs, or saved article HTML files.</span>
       </div>
       <div class="card-body">
         <div class="form-row">
-          <label>DOIs <span class="hint">(one per line)</span></label>
-          <textarea id="doi-list" rows="5" placeholder="10.1038/nphys1170&#10;https://doi.org/10.1145/3375630"></textarea>
+          <label>DOIs or article URLs <span class="hint">(one per line)</span></label>
+          <textarea id="doi-list" rows="6" placeholder="10.1038/nphys1170&#10;https://doi.org/10.1145/3375630&#10;https://journal.example.com/article/..."></textarea>
         </div>
         <div class="form-row">
-          <label>Output .bib file</label>
+          <label>Saved article HTML files <span class="hint">(optional, one per line)</span></label>
+          <textarea id="doi-html-files" rows="3" placeholder="C:\Users\You\Downloads\saved_article.html"></textarea>
+        </div>
+        <div class="form-row">
+          <label>Reference .bib file</label>
           <input type="text" id="doi-output" value="references_from_dois.bib">
         </div>
         <div class="form-row">
@@ -364,11 +380,16 @@
           <input type="text" id="doi-email" placeholder="your@email.com">
         </div>
         <div class="form-row-check">
-          <input type="checkbox" id="doi-append">
+          <input type="checkbox" id="doi-append" checked>
           <label for="doi-append">Append to existing file</label>
         </div>
-        <button class="btn-run" onclick="runDoi2Bib()">Fetch BibTeX</button>
+        <p class="hint">If a line is a journal article URL, Pub Assist saves that page to a temporary local HTML file, extracts the DOI, then deletes the temporary file. If a publisher blocks automated reads, save the article page from your browser with Ctrl+S or a save-page extension such as <a href="https://chromewebstore.google.com/detail/save-page-we/dhhpefjklgkmgeafimnjhojgjamoafof" target="_blank" rel="noopener noreferrer">Save Page WE</a>, then select the saved HTML file above. Generated BibTeX appears below and is written to the selected file.</p>
+        <button class="btn-run" onclick="runDoi2Bib()">Fetch / Append BibTeX</button>
         <div class="result-box" id="doi-result"></div>
+        <div class="form-row">
+          <label>Generated BibTeX preview</label>
+          <textarea id="doi-preview" rows="10" readonly placeholder="Generated BibTeX entries will appear here after the run."></textarea>
+        </div>
       </div>
     </section>
 
@@ -489,6 +510,6 @@
   </main>
 </div>
 
-<script src="/static/app.js"></script>
+<script src="/static/app.js?v=20260603-savedhtml"></script>
 </body>
 </html>

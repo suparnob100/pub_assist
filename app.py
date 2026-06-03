@@ -27,6 +27,7 @@ from clean_latex import clean_latex
 from collect_figures import collect_figures
 from copy_styles import find_and_copy_latex_style_files
 from doi2bib import generate_bibtex_entries, write_bibtex_file
+from doi_from_url import extract_doi_from_journal_url, extract_doi_from_saved_html
 from latexdiff_web import (
     normalize_bib_mode,
     prepare_latexdiff_workspace,
@@ -108,6 +109,116 @@ class OpenFolderRequest(BaseModel):
     path: str
 
 
+class SelectPathRequest(BaseModel):
+    mode: str = "file"
+    title: str = "Select path"
+    initial_path: str = ""
+    file_kind: str = ""
+
+
+def _dialog_initial_path(path):
+    if not path:
+        return Path.home(), ""
+
+    candidate = Path(_user_path(path))
+    if not candidate.is_absolute():
+        candidate = Path(__file__).parent / candidate
+    candidate = candidate.expanduser()
+
+    if candidate.is_dir():
+        return candidate, ""
+    if candidate.parent.exists():
+        return candidate.parent, candidate.name
+    return Path.home(), candidate.name
+
+
+def _dialog_filetypes(kind):
+    if kind == "tex":
+        return [("LaTeX files", "*.tex"), ("All files", "*.*")]
+    if kind == "zip":
+        return [("Zip files", "*.zip"), ("All files", "*.*")]
+    if kind == "bib":
+        return [("BibTeX files", "*.bib"), ("All files", "*.*")]
+    if kind == "html":
+        return [("HTML files", "*.html *.htm"), ("All files", "*.*")]
+    return [("All files", "*.*")]
+
+
+def _select_path_dialog(mode, title, initial_path="", file_kind=""):
+    try:
+        import tkinter as tk
+        from tkinter import filedialog
+    except Exception as exc:
+        raise RuntimeError(
+            "Native file picker is unavailable. Install Tk support for Python "
+            "(for example python3-tk on many Linux distributions), or type the path manually."
+        ) from exc
+
+    initial_dir, initial_file = _dialog_initial_path(initial_path)
+    root = tk.Tk()
+    root.withdraw()
+    try:
+        root.attributes("-topmost", True)
+    except tk.TclError:
+        pass
+
+    def ask_file():
+        return filedialog.askopenfilename(
+            title=title,
+            initialdir=str(initial_dir),
+            initialfile=initial_file,
+            filetypes=_dialog_filetypes(file_kind),
+            parent=root,
+        )
+
+    def ask_folder():
+        return filedialog.askdirectory(
+            title=title,
+            initialdir=str(initial_dir),
+            parent=root,
+        )
+
+    try:
+        if mode == "folder":
+            selected = ask_folder()
+        elif mode == "file-or-folder":
+            choice = {"path": ""}
+            window = tk.Toplevel(root)
+            window.title(title)
+            window.resizable(False, False)
+            try:
+                window.attributes("-topmost", True)
+            except tk.TclError:
+                pass
+
+            label = tk.Label(window, text="Choose a project folder or a zip file.", padx=18, pady=12)
+            label.pack()
+            buttons = tk.Frame(window, padx=12, pady=12)
+            buttons.pack()
+
+            def choose_folder():
+                choice["path"] = ask_folder()
+                window.destroy()
+
+            def choose_file():
+                choice["path"] = ask_file()
+                window.destroy()
+
+            tk.Button(buttons, text="Choose Folder", command=choose_folder, width=16).pack(side=tk.LEFT, padx=4)
+            tk.Button(buttons, text="Choose Zip/File", command=choose_file, width=16).pack(side=tk.LEFT, padx=4)
+            tk.Button(buttons, text="Cancel", command=window.destroy, width=10).pack(side=tk.LEFT, padx=4)
+            window.protocol("WM_DELETE_WINDOW", window.destroy)
+            window.grab_set()
+            window.wait_window()
+            selected = choice["path"]
+        else:
+            selected = ask_file()
+    finally:
+        root.destroy()
+
+    return str(Path(selected).resolve()) if selected else ""
+
+
 @app.post("/api/open-folder")
 async def api_open_folder(req: OpenFolderRequest):
     raw = (req.path or "").strip()
@@ -143,6 +254,25 @@ async def api_open_folder(req: OpenFolderRequest):
         return _err(f"Could not open folder: {exc}")
 
     return _ok({"opened": str(folder)})
+
+
+@app.post("/api/select-path")
+async def api_select_path(req: SelectPathRequest):
+    try:
+        mode = (req.mode or "file").strip().lower()
+        if mode not in {"file", "folder", "file-or-folder"}:
+            return _err("mode must be 'file', 'folder', or 'file-or-folder'.")
+        selected = _select_path_dialog(
+            mode=mode,
+            title=req.title or "Select path",
+            initial_path=req.initial_path or "",
+            file_kind=(req.file_kind or "").strip().lower(),
+        )
+        if not selected:
+            return _ok({"path": ""})
+        return _ok({"path": selected})
+    except Exception as exc:
+        return _err(str(exc))
 
 
 # ── Step 1 — New Project ──────────────────────────────────────────────────────
@@ -380,6 +510,7 @@ async def api_latexdiff(req: LatexdiffRequest):
 
 class Doi2BibRequest(BaseModel):
     dois: list[str]
+    saved_html_files: list[str] = []
     output_bib_file: str = "references_from_dois.bib"
     append: bool = False
     contact_email: str = ""
@@ -393,15 +524,59 @@ async def api_doi2bib(req: Doi2BibRequest):
 
     async def _run():
         try:
+            resolved, extraction_failures, seen = [], [], set()
+
+            def add_resolved(raw, extracted):
+                doi_key = extracted["doi"].lower()
+                if doi_key in seen:
+                    return
+                seen.add(doi_key)
+                resolved.append({
+                    "input": raw,
+                    "doi": extracted["doi"],
+                    "doi_source": extracted["doi_source"],
+                    "resolved_url": extracted["final_url"],
+                })
+
+            for raw in req.dois:
+                raw = str(raw or "").strip()
+                if not raw:
+                    continue
+                try:
+                    extracted = extract_doi_from_journal_url(raw, req.timeout, req.contact_email)
+                    add_resolved(raw, extracted)
+                except Exception as exc:
+                    extraction_failures.append((raw, str(exc)))
+
+            for raw in req.saved_html_files:
+                raw = str(raw or "").strip()
+                if not raw:
+                    continue
+                try:
+                    html_path = _user_path(raw)
+                    extracted = extract_doi_from_saved_html(html_path)
+                    add_resolved(raw, extracted)
+                except Exception as exc:
+                    extraction_failures.append((raw, str(exc)))
+
             entries, failures = await _run_in_pool(
-                generate_bibtex_entries, req.dois, req.timeout, req.contact_email, req.pause_seconds
+                generate_bibtex_entries,
+                [item["doi"] for item in resolved],
+                req.timeout,
+                req.contact_email,
+                req.pause_seconds,
             )
             out_file = _user_path(req.output_bib_file.strip() or "references_from_dois.bib")
-            output_path = await _run_in_pool(write_bibtex_file, entries, out_file, req.append)
+            output_path = str(Path(out_file).resolve())
+            if entries:
+                output_path = await _run_in_pool(write_bibtex_file, entries, out_file, req.append)
             _finish_job(jid, {
                 "output_file": output_path,
                 "entries_count": len(entries),
-                "failures": failures,
+                "resolved_inputs": resolved,
+                "bibtex_entries": [{"doi": doi, "bibtex": bibtex} for doi, bibtex in entries],
+                "bibtex_text": "\n\n".join(bibtex for _, bibtex in entries),
+                "failures": extraction_failures + failures,
             })
         except Exception as exc:
             _fail_job(jid, exc)

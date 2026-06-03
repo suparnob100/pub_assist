@@ -9,11 +9,12 @@ Pub Assist also comes with a local web app that enables the complete workflow th
 - **Modularize LaTeX:** Split large manuscripts into separate section files.
 - **Version control optimized:** Format so each sentence is on its own line for improved Git diffs.
 - **Project builder:** Assemble a well-structured LaTeX project with sections, figures, appendices, and references.
+- **Overleaf handoff:** After creating a project ZIP in the app, open Overleaf and the local ZIP folder from the Step 1 result panel.
 - **Reassembly:** Combine modular files back to a single manuscript.
 - **Cleanup:** Remove redundant code and beautify your LaTeX.
 - **Figure/floats organization:** Review and gather all figures used in one folder.
 - **Reviewer response template:** Create a structured response file in LaTeX.
-- **DOI to BibTeX:** Retrieve BibTeX entries automatically from DOIs.
+- **DOI to BibTeX:** Retrieve BibTeX entries automatically from DOIs, DOI URLs, journal article URLs, or browser-saved article HTML files, then append the BibTeX entry to an existing `.bib` file.
 - **LaTeX diff PDF:** Visually compare manuscript versions using MiKTeX, TeX Live, or MacTeX locally; Docker; or an online service.
 - **Submission Word Docs:** Auto-generate `.docx` files required for journal submission (cover letter, highlights, declarations, etc.) from project inputs.
 
@@ -104,7 +105,9 @@ Or start manually:
 python -m uvicorn app:app --reload --host 127.0.0.1 --port 7654
 ```
 
-Browse to [http://127.0.0.1:7654](http://127.0.0.1:7654) for the app UI, which covers the entire workflow: project generation, modularization, formatting, float/fugure review, beautification, response template, LaTeX diff generation, DOI-to-BibTeX, etc.
+Browse to [http://127.0.0.1:7654](http://127.0.0.1:7654) for the app UI, which covers the entire workflow: project generation, modularization, formatting, float/figure review, beautification, response template, LaTeX diff generation, DOI-to-BibTeX, etc.
+
+When Step 1 creates a ZIP archive, the app shows an Overleaf handoff panel. Use **Open ZIP Folder** to locate the generated archive, then **Open Overleaf** and choose **New Project > Upload Project** in Overleaf. This keeps authentication and file selection inside your own browser session and avoids storing Overleaf credentials in Pub Assist.
 
 **LaTeX Diff supports:**
 ```python
@@ -201,6 +204,12 @@ doi_list = [
 output_bib_file = "references_from_dois.bib"
 ```
 Run the notebook. It tries DOI content negotiation first, then Crossref, and formats entries in a readable way.
+
+In the web app, the **DOI -> BibTeX** card accepts DOIs, `https://doi.org/...` URLs, journal article URLs, and browser-saved article HTML files. It uses a DOI already present in the input first; otherwise it saves the journal page to a temporary local HTML file, extracts article metadata such as `citation_doi`, DOI links, then page text, deletes the temporary file, and appends the generated entry to the selected reference file. The generated BibTeX is also shown in the browser preview box.
+
+For ScienceDirect URLs that contain `/pii/...`, Pub Assist first resolves the PII through Crossref and then Elsevier metadata before trying to fetch the page HTML. This avoids many ScienceDirect HTTP 403 blocks.
+
+Some publisher sites return HTTP 403 for automated page reads. In that case, save the article page from your browser with `Ctrl+S` or a save-page extension such as [Save Page WE](https://chromewebstore.google.com/detail/save-page-we/dhhpefjklgkmgeafimnjhojgjamoafof), then select the saved `.html` or `.htm` file in the app. This lets Pub Assist parse the local file without trying to scrape the publisher site again.
 
 ---
 
