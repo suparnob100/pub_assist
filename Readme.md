@@ -15,6 +15,7 @@ Pub Assist also comes with a local web app that enables the complete workflow th
 - **Figure/floats organization:** Review and gather all figures used in one folder.
 - **Reviewer response template:** Create a structured response file in LaTeX.
 - **DOI to BibTeX:** Retrieve BibTeX entries automatically from DOIs, DOI URLs, journal article URLs, or browser-saved article HTML files, then append the BibTeX entry to an existing `.bib` file.
+- **TexCount:** Generate text and optional HTML word-count reports through the TeXcount website, with an optional local `texcount` fallback.
 - **LaTeX diff PDF:** Visually compare manuscript versions using MiKTeX, TeX Live, or MacTeX locally; Docker; or an online service.
 - **Submission Word Docs:** Auto-generate `.docx` files required for journal submission (cover letter, highlights, declarations, etc.) from project inputs.
 
@@ -22,52 +23,54 @@ Pub Assist also comes with a local web app that enables the complete workflow th
 
 The following notebooks guide you through the preparation workflow:
 
-1. **`Modularize_Latex_file_in_Latex_project.ipynb`:**  
+The notebooks are kept together in the `notebooks/` folder for a cleaner project root. They cover the same core tasks as the browser app and are a useful fallback when the app feels laggy, when a long step is easier to inspect cell-by-cell, or when you want to tweak a workflow before running it on a manuscript.
+
+1. **`notebooks/Modularize_Latex_file_in_Latex_project.ipynb`:**
    Splits a single LaTeX file into section-based files.
    
-2. **`New_line_each_sentence_each_section_in_Sections_folder.ipynb`:**  
+2. **`notebooks/New_line_each_sentence_each_section_in_Sections_folder.ipynb`:**
    Ensures each sentence starts on a new line for improved diffing and collaboration.
 
-3. **`Step_1_generate_latex_project.ipynb`:**  
+3. **`notebooks/Step_1_generate_latex_project.ipynb`:**
    Initializes a new, structured LaTeX project.
    
-4. **`Step_2_reassemble_document_from_project.ipynb`:**  
+4. **`notebooks/Step_2_reassemble_document_from_project.ipynb`:**
    Merges section files into a single document.
    
-5. **`Step_3_clean_latex_files.ipynb`:**  
+5. **`notebooks/Step_3_clean_latex_files.ipynb`:**
    Cleans up comments and whitespace.
    
-6. **`Step_4_review_floats.ipynb`:**  
+6. **`notebooks/Step_4_review_floats.ipynb`:**
    Lists and reviews figures, tables, and other floats.
    
-7. **`Step_5_put_all_figures_used_in_a_sep_fig_folder.ipynb`:**  
+7. **`notebooks/Step_5_put_all_figures_used_in_a_sep_fig_folder.ipynb`:**
    Collects used figures into one directory.
    
-8. **`Step_6_beautification.ipynb`:**  
+8. **`notebooks/Step_6_beautification.ipynb`:**
    Final formatting and beautification.
 
-9. **`Step_7_generate_reviewer_response_template.ipynb`:**  
+9. **`notebooks/Step_7_generate_reviewer_response_template.ipynb`:**
    Creates a ready-to-edit `response_to_reviewers_template.tex`.
 
-10. **`Step_8_generate_latexdiff_report.ipynb`:**  
+10. **`notebooks/Step_8_generate_latexdiff_report.ipynb`:**
     Builds a diff (visual changes) between two manuscript versions using various engines (local, Docker, or online).
 
-11. **`Step_9_generate_submission_word_documents.ipynb`:**  
+11. **`notebooks/Step_9_generate_submission_word_documents.ipynb`:**
     Exports submission materials like cover letters, titles, and declarations as `.docx` files, supporting both single- and double-blind workflows.
 
-12. **`Generate_BibTeX_from_DOIs.ipynb`:**  
+12. **`notebooks/Generate_BibTeX_from_DOIs.ipynb`:**
     Creates a BibTeX file from provided DOIs.
 
-13. **`copy_style_files_to_folder.ipynb`:**  
+13. **`notebooks/copy_style_files_to_folder.ipynb`:**
     Copies journal class/style files into your project.
 
 ## Quick Start
 
 1. Clone or download the repository.
-2. Install Python 3.x and Jupyter.
-3. Open the desired notebook and fill out the user input cell near the top.
+2. For notebooks, install Python 3.x and Jupyter.
+3. Open the desired notebook from `notebooks/` and fill out the user input cell near the top.
 4. Run each cell in order.
-5. For `Step_8_generate_latexdiff_report.ipynb`, install a TeX distribution with `pdflatex`. Use MiKTeX on Windows, TeX Live on Linux, or MacTeX/TeX Live on macOS. For local diffing, ensure `latexdiff` and `bibtex`/`biber` utilities are available.
+5. For `notebooks/Step_8_generate_latexdiff_report.ipynb`, install a TeX distribution with `pdflatex`. Use MiKTeX on Windows, TeX Live on Linux, or MacTeX/TeX Live on macOS. For local diffing, ensure `latexdiff` and `bibtex`/`biber` utilities are available.
 6. If MiKTeX reports a missing script engine `'perl'`, install Perl (e.g., Strawberry Perl on Windows). TeX Live/MacTeX usually include the needed Perl-based tools.
 7. Optionally, install Docker Desktop on Windows/macOS or Docker Engine on Linux for Docker-based diffing.
 8. For Word document generation, make sure `python-docx` is installed.
@@ -80,6 +83,8 @@ App layout:
 ```text
 app.py
 static/
+install_app.bat
+install_app.sh
 start_app.bat
 start_app.sh
 requirements_app.txt
@@ -87,10 +92,21 @@ requirements_app.txt
 
 ### Installation and Launch
 
-Install dependencies:
-```bash
-python -m pip install -r requirements_app.txt
+The app includes installer scripts that check for Python 3.10+, create a local `.venv`, install `requirements_app.txt`, and then declare the app ready.
+
+On Windows, run:
+```bat
+install_app.bat
 ```
+If Python is missing and `winget` is available, the installer will install Python 3.12 automatically. If `winget` is not available, it opens the official Python download page and asks you to install Python manually.
+
+On macOS/Linux, run:
+```bash
+sh install_app.sh
+```
+The installer uses an existing Python 3.10+ if available. If Python is missing, it tries common package managers such as Homebrew, apt, dnf, yum, pacman, zypper, or apk.
+
+After the installer finishes, start the app.
 
 On Windows:
 ```bat
@@ -100,9 +116,12 @@ On macOS/Linux:
 ```bash
 sh start_app.sh
 ```
-Or start manually:
+Or start manually after installation:
+```bat
+.venv\Scripts\python.exe -m uvicorn app:app --reload --host 127.0.0.1 --port 7654
+```
 ```bash
-python -m uvicorn app:app --reload --host 127.0.0.1 --port 7654
+.venv/bin/python -m uvicorn app:app --reload --host 127.0.0.1 --port 7654
 ```
 
 Browse to [http://127.0.0.1:7654](http://127.0.0.1:7654) for the app UI, which covers the entire workflow: project generation, modularization, formatting, float/figure review, beautification, response template, LaTeX diff generation, DOI-to-BibTeX, etc.
@@ -121,7 +140,7 @@ latexdiff_engine = "docker"   # Uses am009/git-latexdiff-web Docker worker
 
 ## Generate a LaTeX Diff PDF
 
-Running `Step_8_generate_latexdiff_report.ipynb` creates a visual diff of two manuscript versions. Three methods are supported:
+Running `notebooks/Step_8_generate_latexdiff_report.ipynb` creates a visual diff of two manuscript versions. Three methods are supported:
 
 - **Online** (`latexdiff_engine = "online"`):  
   Sends only the old and new main `.tex` files to [3142.nl/latex-diff/](https://3142.nl/latex-diff/), receives a diff `.tex` file, and compiles it locally.
@@ -194,7 +213,7 @@ run_worker = True
 
 ## Creating BibTeX from DOIs
 
-Launch `Generate_BibTeX_from_DOIs.ipynb`, update:
+Launch `notebooks/Generate_BibTeX_from_DOIs.ipynb`, update:
 
 ```python
 doi_list = [
@@ -215,13 +234,26 @@ Some publisher sites return HTTP 403 for automated page reads. In that case, sav
 
 ## Copying Style Files
 
-The app and `copy_style_files_to_folder.ipynb` can copy `.sty` files from MiKTeX, TeX Live, or MacTeX. On Linux/macOS, leave the TeX path blank when `kpsewhich` is available; Pub Assist will ask `kpsewhich` where each package lives. You can still provide a manual TeX `latex/` folder if needed.
+The app and `notebooks/copy_style_files_to_folder.ipynb` can copy `.sty` files from MiKTeX, TeX Live, or MacTeX. On Linux/macOS, leave the TeX path blank when `kpsewhich` is available; Pub Assist will ask `kpsewhich` where each package lives. You can still provide a manual TeX `latex/` folder if needed.
+
+---
+
+## Counting Words With TexCount
+
+The web app Utilities section includes **TexCount**. Select a main `.tex` file, or paste a text/LaTeX blob directly into the TexCount text box. Pub Assist writes:
+
+- `*_texcount.txt`
+- `*_texcount.html` when HTML output is enabled
+
+By default, Pub Assist sends the selected `.tex` file content, or the pasted text if provided, to the [TeXcount web service](https://app.uio.no/ifi/texcount/online.php) and saves the returned report locally. The app result panel shows only the compact count dictionary, so you do not need to open the HTML report just to see the totals. The online service analyses only the submitted content; it does not read local `\input` or `\include` subfiles from your project folder.
+
+If you need subfile-aware counting, choose **Local texcount command** in the app. Local mode uses the `texcount` command with `-utf8`, optionally `-inc` for included files and `-sum` for summary output. MiKTeX, TeX Live, and MacTeX commonly include TexCount, but Windows/MiKTeX users may also need Perl installed for the local command to run.
 
 ---
 
 ## Generating Submission Word Documents
 
-Edit your manuscript metadata in `Step_9_generate_submission_word_documents.ipynb`:
+Edit your manuscript metadata in `notebooks/Step_9_generate_submission_word_documents.ipynb`:
 
 ```python
 journal_name = "[Journal Name]"
@@ -243,21 +275,24 @@ pub_assist/
 |-- Readme.md
 |-- app.py
 |-- requirements_app.txt
+|-- install_app.bat
+|-- install_app.sh
 |-- start_app.bat
 |-- start_app.sh
-|-- Modularize_Latex_file_in_Latex_project.ipynb
-|-- New_line_each_sentence_each_section_in_Sections_folder.ipynb
-|-- Step_1_generate_latex_project.ipynb
-|-- Step_2_reassemble_document_from_project.ipynb
-|-- Step_3_clean_latex_files.ipynb
-|-- Step_4_review_floats.ipynb
-|-- Step_5_put_all_figures_used_in_a_sep_fig_folder.ipynb
-|-- Step_6_beautification.ipynb
-|-- Step_7_generate_reviewer_response_template.ipynb
-|-- Step_8_generate_latexdiff_report.ipynb
-|-- Step_9_generate_submission_word_documents.ipynb
-|-- Generate_BibTeX_from_DOIs.ipynb
-|-- copy_style_files_to_folder.ipynb
+|-- notebooks/
+|   |-- Modularize_Latex_file_in_Latex_project.ipynb
+|   |-- New_line_each_sentence_each_section_in_Sections_folder.ipynb
+|   |-- Step_1_generate_latex_project.ipynb
+|   |-- Step_2_reassemble_document_from_project.ipynb
+|   |-- Step_3_clean_latex_files.ipynb
+|   |-- Step_4_review_floats.ipynb
+|   |-- Step_5_put_all_figures_used_in_a_sep_fig_folder.ipynb
+|   |-- Step_6_beautification.ipynb
+|   |-- Step_7_generate_reviewer_response_template.ipynb
+|   |-- Step_8_generate_latexdiff_report.ipynb
+|   |-- Step_9_generate_submission_word_documents.ipynb
+|   |-- Generate_BibTeX_from_DOIs.ipynb
+|   `-- copy_style_files_to_folder.ipynb
 |-- Resources/
 |   |-- endfloat.md
 |   `-- symbols.md

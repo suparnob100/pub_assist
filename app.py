@@ -42,6 +42,7 @@ from reassemble import reassemble
 from review_floats import review_floats
 from reviewer_template import build_template
 from submission_docs import generate_submission_documents
+from texcount_runner import run_texcount
 
 app = FastAPI(title="Pub Assist")
 _pool = ThreadPoolExecutor(max_workers=4)
@@ -611,6 +612,44 @@ async def api_copy_styles(req: CopyStylesRequest):
 
 
 # ── Step 9 — Submission Documents ────────────────────────────────────────────
+
+class TexCountRequest(BaseModel):
+    latex_file: str
+    latex_text: str = ""
+    output_folder: str = ""
+    output_prefix: str = ""
+    service: str = "online"
+    texcount_command: str = "texcount"
+    include_subfiles: bool = True
+    summary: bool = True
+    html_report: bool = True
+
+
+@app.post("/api/texcount")
+async def api_texcount(req: TexCountRequest):
+    jid = _new_job()
+
+    async def _run():
+        try:
+            result = await _run_in_pool(
+                run_texcount,
+                _user_path(req.latex_file),
+                req.latex_text,
+                _user_path(req.output_folder) if req.output_folder else "",
+                req.output_prefix,
+                req.service,
+                _user_path(req.texcount_command) if req.texcount_command else "texcount",
+                req.include_subfiles,
+                req.summary,
+                req.html_report,
+            )
+            _finish_job(jid, result)
+        except Exception as exc:
+            _fail_job(jid, exc)
+
+    asyncio.create_task(_run())
+    return JSONResponse({"status": "running", "job_id": jid})
+
 
 class SubmissionDocsRequest(BaseModel):
     config: dict

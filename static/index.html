@@ -46,6 +46,7 @@
     <div class="sidebar-section-label">Utilities</div>
     <a href="#step-modularize" class="nav-item">Modularize</a>
     <a href="#step-onesentence" class="nav-item">One Sentence / Line</a>
+    <a href="#step-texcount" class="nav-item">TexCount</a>
     <a href="#step-doi2bib" class="nav-item">DOI → BibTeX</a>
     <a href="#step-copystyles" class="nav-item">Copy Style Files</a>
   </nav>
@@ -457,6 +458,61 @@
       </div>
     </section>
 
+    <!-- TexCount -->
+    <section class="tool-card" id="step-texcount">
+      <div class="card-header">
+        <span class="card-title">TexCount</span>
+        <span class="card-desc">Generate word-count reports for a LaTeX manuscript using the TeXcount website.</span>
+      </div>
+      <div class="card-body">
+        <div class="form-row">
+          <label>Main .tex file <span class="hint">(optional if text is pasted below)</span></label>
+          <input type="text" id="tc-file" placeholder="/path/to/MyPaper/manuscript.tex">
+        </div>
+        <div class="form-row">
+          <label>Paste LaTeX/text <span class="hint">(optional; used instead of the file field)</span></label>
+          <textarea id="tc-text" rows="8" placeholder="Paste an abstract, section, manuscript text, or LaTeX source here."></textarea>
+        </div>
+        <div class="form-row">
+          <label>Output folder <span class="hint">(blank = texcount_reports beside .tex, or app folder for pasted text)</span></label>
+          <input type="text" id="tc-output" placeholder="/path/to/MyPaper/texcount_reports">
+        </div>
+        <div class="form-row">
+          <label>Output prefix <span class="hint">(optional)</span></label>
+          <input type="text" id="tc-prefix" placeholder="manuscript">
+        </div>
+        <div class="form-grid two-col">
+          <div class="form-row">
+            <label>Counting service</label>
+            <select id="tc-service">
+              <option value="online" selected>TeXcount website</option>
+              <option value="local">Local texcount command</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>Local command <span class="hint">(fallback only)</span></label>
+            <input type="text" id="tc-command" value="texcount">
+          </div>
+          <div class="form-row-check">
+            <input type="checkbox" id="tc-inc" checked>
+            <label for="tc-inc">Include subfiles in local mode (<code>-inc</code>)</label>
+          </div>
+          <div class="form-row-check">
+            <input type="checkbox" id="tc-sum" checked>
+            <label for="tc-sum">Summary/cumulative report</label>
+          </div>
+          <div class="form-row-check">
+            <input type="checkbox" id="tc-html" checked>
+            <label for="tc-html">Write HTML report</label>
+          </div>
+        </div>
+        <p class="hint">Default mode sends only the selected .tex file content to the TeXcount web service and saves the returned report. Use local mode only when <code>texcount</code> and Perl are working on your system.</p>
+        <button class="btn-run" onclick="runTexCount()">Run TexCount</button>
+        <button class="btn-secondary" onclick="clearResult('tc-result')">Clear Result</button>
+        <div class="result-box" id="tc-result"></div>
+      </div>
+    </section>
+
     <!-- DOI → BibTeX -->
     <section class="tool-card" id="step-doi2bib">
       <div class="card-header">
@@ -521,6 +577,6 @@
   </main>
 </div>
 
-<script src="/static/app.js?v=20260603-savedhtml"></script>
+<script src="/static/app.js?v=20260604-texcount-compact"></script>
 </body>
 </html>

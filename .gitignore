@@ -7,3 +7,4 @@ latexdiff_runs/*
 submission_word_documents/*
 submission_word_documents_rendered/*
 __pycache__/
+.venv/

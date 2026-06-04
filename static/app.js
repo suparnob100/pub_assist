@@ -13,6 +13,20 @@ function showInfo(id, msg) {
   el.textContent = msg;
 }
 
+function clearResult(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.className = 'result-box';
+  el.textContent = '';
+}
+
+function showTexCountResult(result) {
+  const display = {
+    counts: result && result.counts ? result.counts : {},
+  };
+  showResult('tc-result', display, true);
+}
+
 async function post(endpoint, body) {
   const resp = await fetch('/api/' + endpoint, {
     method: 'POST',
@@ -22,14 +36,18 @@ async function post(endpoint, body) {
   return resp.json();
 }
 
-async function pollJob(jobId, resultId, btnId, onDone) {
+async function pollJob(jobId, resultId, btnId, onDone, renderDone) {
   const btn = document.getElementById(btnId);
   while (true) {
     await new Promise(r => setTimeout(r, 1200));
     const data = await fetch('/api/jobs/' + jobId).then(r => r.json());
     if (data.status === 'done') {
       if (btn) btn.disabled = false;
-      showResult(resultId, data.result, true);
+      if (renderDone) {
+        renderDone(data.result);
+      } else {
+        showResult(resultId, data.result, true);
+      }
       if (onDone) onDone(data.result);
       return data.result;
     }
@@ -79,6 +97,8 @@ const PATH_BUTTONS = {
   'cs-file': { action: 'select', mode: 'file', fileKind: 'tex', title: 'Select main .tex file' },
   'cs-out': { action: 'open' },
   'cs-miktex': { action: 'select', mode: 'folder', title: 'Select TeX latex folder' },
+  'tc-file': { action: 'select', mode: 'file', fileKind: 'tex', title: 'Select LaTeX file' },
+  'tc-output': { action: 'open' },
   'sd-outfolder': { action: 'open' },
 };
 
@@ -403,6 +423,28 @@ async function runCopyStyles() {
 }
 
 /* ── Step 9: Submission Docs ───────────────────────────────────────────── */
+async function runTexCount() {
+  const btn = event.target; btn.disabled = true;
+  const data = await post('texcount', {
+    latex_file:       document.getElementById('tc-file').value.trim(),
+    latex_text:       document.getElementById('tc-text').value,
+    output_folder:    document.getElementById('tc-output').value.trim(),
+    output_prefix:    document.getElementById('tc-prefix').value.trim(),
+    service:          document.getElementById('tc-service').value,
+    texcount_command: document.getElementById('tc-command').value.trim() || 'texcount',
+    include_subfiles: document.getElementById('tc-inc').checked,
+    summary:          document.getElementById('tc-sum').checked,
+    html_report:      document.getElementById('tc-html').checked,
+  });
+  if (data.status === 'running') {
+    showInfo('tc-result', `Job started (${data.job_id}). Counting words...`);
+    pollJob(data.job_id, 'tc-result', null, null, showTexCountResult).then(() => { btn.disabled = false; });
+  } else {
+    btn.disabled = false;
+    showResult('tc-result', data.error || data, false);
+  }
+}
+
 async function runSubmissionDocs() {
   const btn = event.target; btn.disabled = true;
   let config;
