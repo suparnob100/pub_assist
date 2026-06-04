@@ -84,8 +84,10 @@ App layout:
 app.py
 static/
 install_app.bat
+install_app.ps1
 install_app.sh
 start_app.bat
+start_app.ps1
 start_app.sh
 requirements_app.txt
 ```
@@ -94,7 +96,16 @@ requirements_app.txt
 
 The app includes installer scripts that check for Python 3.10+, create a local `.venv`, install `requirements_app.txt`, and then declare the app ready.
 
-On Windows, run:
+On Windows PowerShell, run:
+```powershell
+.\install_app.ps1
+```
+If PowerShell blocks scripts on your system, run:
+```powershell
+powershell -ExecutionPolicy Bypass -File .\install_app.ps1
+```
+
+From Command Prompt, run:
 ```bat
 install_app.bat
 ```
@@ -108,7 +119,16 @@ The installer uses an existing Python 3.10+ if available. If Python is missing, 
 
 After the installer finishes, start the app.
 
-On Windows:
+On Windows PowerShell:
+```powershell
+.\start_app.ps1
+```
+If PowerShell blocks scripts on your system, run:
+```powershell
+powershell -ExecutionPolicy Bypass -File .\start_app.ps1
+```
+
+From Command Prompt:
 ```bat
 start_app.bat
 ```
@@ -276,8 +296,10 @@ pub_assist/
 |-- app.py
 |-- requirements_app.txt
 |-- install_app.bat
+|-- install_app.ps1
 |-- install_app.sh
 |-- start_app.bat
+|-- start_app.ps1
 |-- start_app.sh
 |-- notebooks/
 |   |-- Modularize_Latex_file_in_Latex_project.ipynb
