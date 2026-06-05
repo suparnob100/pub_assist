@@ -118,6 +118,8 @@ sh install_app.sh
 ```
 The installer uses an existing Python 3.10+ if available. If Python is missing, it tries common package managers such as Homebrew, apt, dnf, yum, pacman, zypper, or apk.
 
+If Node.js is missing, the installer asks whether to install Node.js LTS. Choose `y` to install it for BibTeX Cleaner website-bundle and npm/npx support, or press Enter/choose `n` to skip it.
+
 After the installer finishes, start the app.
 
 On Windows PowerShell:
@@ -307,6 +309,8 @@ The web app Utilities section includes **TexCount**. Select a main `.tex` file, 
 - `*_texcount.html` when HTML output is enabled
 
 By default, Pub Assist sends the selected `.tex` file content, or the pasted text if provided, to the [TeXcount web service](https://app.uio.no/ifi/texcount/online.php) and saves the returned report locally. The app result panel shows only the compact count dictionary, so you do not need to open the HTML report just to see the totals. The online service analyses only the submitted content; it does not read local `\input` or `\include` subfiles from your project folder.
+
+If online TexCount fails with `CERTIFICATE_VERIFY_FAILED`, run the installer again so the app environment gets `certifi`, then restart the app. Pub Assist uses that certificate bundle for the TeXcount HTTPS request. On computers behind institutional SSL inspection, the online service may still be blocked; use the local TexCount route for a `.tex` file in that case.
 
 If you need subfile-aware counting, choose **Local texcount command** in the app. Local mode uses the `texcount` command with `-utf8`, optionally `-inc` for included files and `-sum` for summary output. MiKTeX, TeX Live, and MacTeX commonly include TexCount, but Windows/MiKTeX users may also need Perl installed for the local command to run.
 

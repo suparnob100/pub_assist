@@ -2,11 +2,17 @@ import html
 import re
 import shutil
 import subprocess
+import ssl
 import urllib.error
 import urllib.parse
 import urllib.request
 from html.parser import HTMLParser
 from pathlib import Path
+
+try:
+    import certifi
+except ImportError:  # pragma: no cover - installer should provide this.
+    certifi = None
 
 
 TEXCOUNT_ONLINE_PAGE = "https://app.uio.no/ifi/texcount/online.php"
@@ -115,6 +121,27 @@ def _extract_counts(text):
     return counts
 
 
+def _is_certificate_error(exc):
+    reason = getattr(exc, "reason", exc)
+    return isinstance(reason, ssl.SSLCertVerificationError) or "CERTIFICATE_VERIFY_FAILED" in str(exc)
+
+
+def _certificate_error_message(errors):
+    attempts = "\n".join(f"- {label}: {error}" for label, error in errors)
+    certifi_hint = (
+        "The Pub Assist installer installs certifi, which usually fixes this for fresh Python installs."
+        if certifi is not None
+        else "Run the Pub Assist installer again, or install certifi in the app environment."
+    )
+    return (
+        "Python could not verify the HTTPS certificate for the TeXcount web service.\n\n"
+        f"Tried certificate sources:\n{attempts}\n\n"
+        f"{certifi_hint}\n"
+        "If this computer is behind an institutional proxy or SSL inspection, the online service may still be blocked; "
+        "use Local texcount mode on a .tex file in that case."
+    )
+
+
 def _read_latex_file(path):
     raw = path.read_bytes()
     for encoding in ("utf-8-sig", "utf-8", "latin-1"):
@@ -176,9 +203,28 @@ def _post_texcount_online(latex_code, summary=True, timeout_seconds=120):
         },
         method="POST",
     )
-    with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
-        charset = response.headers.get_content_charset() or "utf-8"
-        return response.read().decode(charset, errors="replace")
+    contexts = []
+    if certifi is not None:
+        contexts.append(("certifi CA bundle", ssl.create_default_context(cafile=certifi.where())))
+    contexts.append(("Python default CA store", None))
+
+    certificate_errors = []
+    for label, context in contexts:
+        try:
+            kwargs = {"timeout": timeout_seconds}
+            if context is not None:
+                kwargs["context"] = context
+            with urllib.request.urlopen(request, **kwargs) as response:
+                charset = response.headers.get_content_charset() or "utf-8"
+                return response.read().decode(charset, errors="replace")
+        except urllib.error.URLError as exc:
+            if _is_certificate_error(exc):
+                certificate_errors.append((label, exc))
+                continue
+            raise
+
+    raise RuntimeError(_certificate_error_message(certificate_errors))
+
 
 
 def _run_texcount_online(

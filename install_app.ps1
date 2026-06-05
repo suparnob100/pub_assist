@@ -100,8 +100,33 @@ if (Get-Command node -ErrorAction SilentlyContinue) {
     }
 } else {
     Write-Host "Optional BibTeX Cleaner engines: Node.js was not found."
-    Write-Host "  Install Node.js LTS to use the website-bundle or npm/npx cleaner engines:"
-    Write-Host "  winget install OpenJS.NodeJS.LTS"
+    $installNode = Read-Host "Install Node.js LTS now for BibTeX Cleaner support? [y/N]"
+    if ($installNode -match '^[Yy]$') {
+        if (Get-Command winget -ErrorAction SilentlyContinue) {
+            Write-Host "Installing Node.js LTS with winget..."
+            winget install --id OpenJS.NodeJS.LTS -e --source winget --accept-package-agreements --accept-source-agreements
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "Node.js installation failed. You can install it later from https://nodejs.org/."
+            } elseif (Get-Command node -ErrorAction SilentlyContinue) {
+                Write-Host "Optional BibTeX Cleaner website-bundle route: Node.js found."
+                if (Get-Command npx -ErrorAction SilentlyContinue) {
+                    Write-Host "Optional BibTeX Cleaner npm/npx route: npx found."
+                    Write-Host "  Pub Assist can run: npx --yes bibtex-tidy@latest"
+                } else {
+                    Write-Host "Optional BibTeX Cleaner npm/npx route: npx was not found."
+                }
+            } else {
+                Write-Host "Node.js was installed, but this PowerShell session cannot find it yet."
+                Write-Host "Close this window, open a new PowerShell window, and run .\install_app.ps1 again."
+            }
+        } else {
+            Write-Host "winget was not found, so this installer cannot install Node.js automatically."
+            Write-Host "Please install Node.js LTS from https://nodejs.org/ and run this installer again."
+            Start-Process "https://nodejs.org/"
+        }
+    } else {
+        Write-Host "Skipping Node.js installation. BibTeX Cleaner website-bundle and npm/npx routes will be unavailable."
+    }
 }
 
 Write-Host ""

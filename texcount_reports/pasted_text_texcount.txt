@@ -1,0 +1,14 @@
+LaTeX word count
+habij bijiji alsfjal lksjflkai lkjlaks.
+Word count
+Sum count: 5
+Words in text: 5
+Words in headers: 0
+Words outside text (captions, etc.): 0
+Number of headers: 0
+Number of floats/tables/figures: 0
+Number of math inlines: 0
+Number of math displayed: 0
+Subcounts:
+text+headers+captions (#headers/#floats/#inlines/#displayed)
+5+0+0 (0/0/0/0) _top_

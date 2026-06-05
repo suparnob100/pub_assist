@@ -82,17 +82,40 @@ echo.
 where node >nul 2>nul
 if errorlevel 1 (
   echo Optional BibTeX Cleaner engines: Node.js was not found.
-  echo   Install Node.js LTS to use the website-bundle or npm/npx cleaner engines:
-  echo   winget install OpenJS.NodeJS.LTS
-) else (
-  echo Optional BibTeX Cleaner website-bundle route: Node.js found.
-  where npx >nul 2>nul
-  if errorlevel 1 (
-    echo Optional BibTeX Cleaner npm/npx route: npx was not found.
+  set "INSTALL_NODE="
+  set /p INSTALL_NODE=Install Node.js LTS now for BibTeX Cleaner support? [y/N]:
+  if /I "!INSTALL_NODE!"=="Y" (
+    where winget >nul 2>nul
+    if errorlevel 1 (
+      echo winget was not found, so this installer cannot install Node.js automatically.
+      echo Please install Node.js LTS from https://nodejs.org/ and run this installer again.
+      start https://nodejs.org/
+      goto :eof
+    )
+    echo Installing Node.js LTS with winget...
+    winget install --id OpenJS.NodeJS.LTS -e --source winget --accept-package-agreements --accept-source-agreements
+    if errorlevel 1 (
+      echo Node.js installation failed. You can install it later from https://nodejs.org/.
+      goto :eof
+    )
+    where node >nul 2>nul
+    if errorlevel 1 (
+      echo Node.js was installed, but this Command Prompt cannot find it yet.
+      echo Close this window, open a new Command Prompt, and run install_app.bat again.
+      goto :eof
+    )
   ) else (
-    echo Optional BibTeX Cleaner npm/npx route: npx found.
-    echo   Pub Assist can run: npx --yes bibtex-tidy@latest
+    echo Skipping Node.js installation. BibTeX Cleaner website-bundle and npm/npx routes will be unavailable.
+    goto :eof
   )
+)
+echo Optional BibTeX Cleaner website-bundle route: Node.js found.
+where npx >nul 2>nul
+if errorlevel 1 (
+  echo Optional BibTeX Cleaner npm/npx route: npx was not found.
+) else (
+  echo Optional BibTeX Cleaner npm/npx route: npx found.
+  echo   Pub Assist can run: npx --yes bibtex-tidy@latest
 )
 goto :eof
 

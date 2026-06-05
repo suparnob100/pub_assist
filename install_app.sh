@@ -73,6 +73,49 @@ install_python() {
   fi
 }
 
+install_node() {
+  os_name="$(uname -s 2>/dev/null || echo unknown)"
+
+  if [ "$os_name" = "Darwin" ]; then
+    if command -v brew >/dev/null 2>&1; then
+      echo "Installing Node.js with Homebrew..."
+      brew install node
+      return $?
+    fi
+    echo "Homebrew was not found, so this installer cannot install Node.js automatically."
+    echo "Install Node.js LTS from https://nodejs.org/ and run this installer again."
+    if command -v open >/dev/null 2>&1; then
+      open "https://nodejs.org/"
+    fi
+    return 1
+  fi
+
+  if command -v apt-get >/dev/null 2>&1; then
+    echo "Installing Node.js with apt..."
+    run_privileged apt-get update
+    run_privileged apt-get install -y nodejs npm
+  elif command -v dnf >/dev/null 2>&1; then
+    echo "Installing Node.js with dnf..."
+    run_privileged dnf install -y nodejs npm
+  elif command -v yum >/dev/null 2>&1; then
+    echo "Installing Node.js with yum..."
+    run_privileged yum install -y nodejs npm
+  elif command -v pacman >/dev/null 2>&1; then
+    echo "Installing Node.js with pacman..."
+    run_privileged pacman -Sy --needed nodejs npm
+  elif command -v zypper >/dev/null 2>&1; then
+    echo "Installing Node.js with zypper..."
+    run_privileged zypper install -y nodejs npm
+  elif command -v apk >/dev/null 2>&1; then
+    echo "Installing Node.js with apk..."
+    run_privileged apk add nodejs npm
+  else
+    echo "No supported package manager was detected for automatic Node.js installation."
+    echo "Install Node.js LTS from https://nodejs.org/ and run this installer again."
+    return 1
+  fi
+}
+
 if ! find_python; then
   echo "Python 3.10 or newer was not found."
   install_python
@@ -119,7 +162,31 @@ if command -v node >/dev/null 2>&1; then
   fi
 else
   echo "Optional BibTeX Cleaner engines: Node.js was not found."
-  echo "  Install Node.js LTS to use the website-bundle or npm/npx cleaner engines, then rerun this installer."
+  printf "Install Node.js LTS now for BibTeX Cleaner support? [y/N]: "
+  read INSTALL_NODE_CHOICE || INSTALL_NODE_CHOICE=""
+  case "$INSTALL_NODE_CHOICE" in
+    [Yy])
+      if install_node; then
+        if command -v node >/dev/null 2>&1; then
+          echo "Optional BibTeX Cleaner website-bundle route: Node.js found."
+          if command -v npx >/dev/null 2>&1; then
+            echo "Optional BibTeX Cleaner npm/npx route: npx found."
+            echo "  Pub Assist can run: npx --yes bibtex-tidy@latest"
+          else
+            echo "Optional BibTeX Cleaner npm/npx route: npx was not found."
+          fi
+        else
+          echo "Node.js installation finished, but this terminal cannot find node yet."
+          echo "Open a new terminal and run sh install_app.sh again."
+        fi
+      else
+        echo "Node.js installation was skipped or failed. You can install it later from https://nodejs.org/."
+      fi
+      ;;
+    *)
+      echo "Skipping Node.js installation. BibTeX Cleaner website-bundle and npm/npx routes will be unavailable."
+      ;;
+  esac
 fi
 
 echo
