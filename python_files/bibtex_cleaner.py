@@ -1,5 +1,5 @@
-import os
 import json
+import os
 import shlex
 import shutil
 import subprocess
@@ -49,6 +49,39 @@ def _resolve_path(path):
 def _split_command(command):
     command = str(command or "").strip() or DEFAULT_BIBTEX_TIDY_COMMAND
     return shlex.split(command, posix=os.name != "nt")
+
+
+def _resolve_executable(command_name):
+    command_name = str(command_name or "").strip()
+    if not command_name:
+        return ""
+    if any(sep in command_name for sep in ("/", "\\")):
+        path = _resolve_path(command_name)
+        return str(path.resolve()) if path.is_file() else ""
+    return shutil.which(command_name) or ""
+
+
+def _resolve_local_bibtex_tidy_command(command):
+    cmd = _split_command(command)
+    if not cmd:
+        cmd = _split_command(DEFAULT_BIBTEX_TIDY_COMMAND)
+
+    executable = _resolve_executable(cmd[0])
+    if executable:
+        return [executable, *cmd[1:]], ""
+
+    if cmd[0].lower() == "npx":
+        npm = _resolve_executable("npm")
+        if npm:
+            return (
+                [npm, "exec", "--yes", "--package", "bibtex-tidy@latest", "--", "bibtex-tidy"],
+                "npx was not found on PATH, so Pub Assist used npm exec with bibtex-tidy@latest.",
+            )
+
+    raise FileNotFoundError(
+        f"Could not find '{cmd[0]}' on PATH. The local npm/npx cleaner needs npx, npm, or a globally installed "
+        "bibtex-tidy command. Use the Website bundle cleaner engine if Node.js is available but npm/npx is not."
+    )
 
 
 def _tail(text, limit=4000):
@@ -472,7 +505,9 @@ def clean_bibtex_file(
         command_for_report = ["GET", BIBTEX_TIDY_WEB_BUNDLE_URL, "then", "node", "website-bundle"]
         service_label = "BibTeX Tidy website bundle"
     elif service in {"local", "npm", "npx"}:
-        cmd = _split_command(command)
+        cmd, command_note = _resolve_local_bibtex_tidy_command(command)
+        if command_note:
+            warnings.append(command_note)
         args = []
         if modify_input:
             args.append("--modify")
@@ -498,8 +533,8 @@ def clean_bibtex_file(
             )
         except FileNotFoundError as exc:
             raise FileNotFoundError(
-                f"Could not find '{cmd[0]}'. Install Node.js/npm for the default npx command, "
-                "or install bibtex-tidy globally and set the command to 'bibtex-tidy'."
+                f"Could not launch '{cmd[0]}'. The local npm/npx cleaner needs npx, npm, or a globally installed "
+                "bibtex-tidy command. Use the Website bundle cleaner engine if Node.js is available but npm/npx is not."
             ) from exc
 
         if result.returncode != 0:
