@@ -1,86 +1,68 @@
-# Pub Assist: Prepare LaTeX Manuscripts for Journal Submission
+# Pub Assist
 
-**Pub Assist** offers a notebook-driven workflow to prepare LaTeX manuscripts for submission, revision, and reviewer response. It helps you organize files, modularize and reassemble LaTeX documents, manage figures, generate reviewer response templates, build BibTeX files from DOIs, and create visual diff PDFs of your manuscript revisions.
+A workflow tool for preparing LaTeX manuscripts for journal submission, revision, and reviewer response. Pub Assist provides a local web app for browser-based access and a set of Jupyter notebooks for cell-by-cell control.
 
-Pub Assist also comes with a local web app that enables the complete workflow through your browser.
-
-## Features
-
-- **Modularize LaTeX:** Split large manuscripts into separate section files.
-- **Version control optimized:** Format so each sentence is on its own line for improved Git diffs.
-- **Project builder:** Assemble a well-structured LaTeX project with sections, figures, appendices, and references.
-- **Overleaf handoff:** After creating a project ZIP in the app, open Overleaf and the local ZIP folder from the Step 1 result panel.
-- **Reassembly:** Combine modular files back to a single manuscript.
-- **Cleanup:** Remove redundant code and beautify your LaTeX.
-- **Figure/floats organization:** Review and gather all figures used in one folder.
-- **Reviewer response template:** Create a structured response file in LaTeX.
-- **DOI to BibTeX:** Retrieve BibTeX entries automatically from DOIs, DOI URLs, journal article URLs, or browser-saved article HTML files, then append the BibTeX entry to an existing `.bib` file.
-- **BibTeX Cleaner:** Tidy existing `.bib` files with `bibtex-tidy`, using option groups that mirror the online BibTeX Tidy UI.
-- **TexCount:** Generate text and optional HTML word-count reports through the TeXcount website, with an optional local `texcount` fallback.
-- **LaTeX diff PDF:** Visually compare manuscript versions using MiKTeX, TeX Live, or MacTeX locally; Docker; or an online service.
-- **Submission Word Docs:** Auto-generate `.docx` files required for journal submission (cover letter, highlights, declarations, etc.) from project inputs.
-
-## Workflow Notebooks
-
-The following notebooks guide you through the preparation workflow:
-
-The notebooks are kept together in the `notebooks/` folder for a cleaner project root. They cover the same core tasks as the browser app and are a useful fallback when the app feels laggy, when a long step is easier to inspect cell-by-cell, or when you want to tweak a workflow before running it on a manuscript.
-
-1. **`notebooks/Modularize_Latex_file_in_Latex_project.ipynb`:**
-   Splits a single LaTeX file into section-based files.
-   
-2. **`notebooks/New_line_each_sentence_each_section_in_Sections_folder.ipynb`:**
-   Ensures each sentence starts on a new line for improved diffing and collaboration.
-
-3. **`notebooks/Step_1_generate_latex_project.ipynb`:**
-   Initializes a new, structured LaTeX project.
-   
-4. **`notebooks/Step_2_reassemble_document_from_project.ipynb`:**
-   Merges section files into a single document.
-   
-5. **`notebooks/Step_3_clean_latex_files.ipynb`:**
-   Cleans up comments and whitespace.
-   
-6. **`notebooks/Step_4_review_floats.ipynb`:**
-   Lists and reviews figures, tables, and other floats.
-   
-7. **`notebooks/Step_5_put_all_figures_used_in_a_sep_fig_folder.ipynb`:**
-   Collects used figures into one directory.
-   
-8. **`notebooks/Step_6_beautification.ipynb`:**
-   Final formatting and beautification.
-
-9. **`notebooks/Step_7_generate_reviewer_response_template.ipynb`:**
-   Creates a ready-to-edit `response_to_reviewers_template.tex`.
-
-10. **`notebooks/Step_8_generate_latexdiff_report.ipynb`:**
-    Builds a diff (visual changes) between two manuscript versions using various engines (local, Docker, or online).
-
-11. **`notebooks/Step_9_generate_submission_word_documents.ipynb`:**
-    Exports submission materials like cover letters, titles, and declarations as `.docx` files, supporting both single- and double-blind workflows.
-
-12. **`notebooks/Generate_BibTeX_from_DOIs.ipynb`:**
-    Creates a BibTeX file from provided DOIs.
-
-13. **`notebooks/copy_style_files_to_folder.ipynb`:**
-    Copies journal class/style files into your project.
-
-## Quick Start
-
-1. Clone or download the repository.
-2. For notebooks, install Python 3.x and Jupyter.
-3. Open the desired notebook from `notebooks/` and fill out the user input cell near the top.
-4. Run each cell in order.
-5. For `notebooks/Step_8_generate_latexdiff_report.ipynb`, install a TeX distribution with `pdflatex`. Use MiKTeX on Windows, TeX Live on Linux, or MacTeX/TeX Live on macOS. For local diffing, ensure `latexdiff` and `bibtex`/`biber` utilities are available.
-6. If MiKTeX reports a missing script engine `'perl'`, install Perl (e.g., Strawberry Perl on Windows). TeX Live/MacTeX usually include the needed Perl-based tools.
-7. Optionally, install Docker Desktop on Windows/macOS or Docker Engine on Linux for Docker-based diffing.
-8. For Word document generation, make sure `python-docx` is installed.
+---
 
 ## Local Web App
 
-Pub Assist provides a FastAPI web app for browser-based access to the workflow.
+### Installation
 
-App layout:
+The app requires Python 3.10+. Installer scripts handle virtual environment setup and dependency installation automatically.
+
+**Windows (PowerShell):**
+```powershell
+.\install_app.ps1
+```
+If PowerShell blocks scripts:
+```powershell
+powershell -ExecutionPolicy Bypass -File .\install_app.ps1
+```
+
+**Windows (Command Prompt):**
+```bat
+install_app.bat
+```
+If Python is missing and `winget` is available, the installer installs Python 3.12 automatically. Otherwise it opens the official Python download page.
+
+**macOS / Linux:**
+```bash
+sh install_app.sh
+```
+Uses an existing Python 3.10+ if found; otherwise tries common package managers (Homebrew, apt, dnf, yum, pacman, zypper, apk).
+
+During installation, you will be asked whether to install Node.js LTS. Choose `y` to enable the BibTeX Cleaner website-bundle route and npm/npx support, or press Enter to skip.
+
+### Starting the App
+
+**Windows (PowerShell):**
+```powershell
+.\start_app.ps1
+```
+
+**Windows (Command Prompt):**
+```bat
+start_app.bat
+```
+
+**macOS / Linux:**
+```bash
+sh start_app.sh
+```
+
+**Manual start (after installation):**
+```bash
+# Windows
+.venv\Scripts\python.exe -m uvicorn app:app --reload --host 127.0.0.1 --port 7654
+
+# macOS / Linux
+.venv/bin/python -m uvicorn app:app --reload --host 127.0.0.1 --port 7654
+```
+
+Then open [http://127.0.0.1:7654](http://127.0.0.1:7654) in your browser.
+
+### App Layout
+
 ```text
 app.py
 static/
@@ -93,242 +75,117 @@ start_app.sh
 requirements_app.txt
 ```
 
-### Installation and Launch
-
-The app includes installer scripts that check for Python 3.10+, create a local `.venv`, install `requirements_app.txt`, and then declare the app ready.
-
-On Windows PowerShell, run:
-```powershell
-.\install_app.ps1
-```
-If PowerShell blocks scripts on your system, run:
-```powershell
-powershell -ExecutionPolicy Bypass -File .\install_app.ps1
-```
-
-From Command Prompt, run:
-```bat
-install_app.bat
-```
-If Python is missing and `winget` is available, the installer will install Python 3.12 automatically. If `winget` is not available, it opens the official Python download page and asks you to install Python manually.
-
-On macOS/Linux, run:
-```bash
-sh install_app.sh
-```
-The installer uses an existing Python 3.10+ if available. If Python is missing, it tries common package managers such as Homebrew, apt, dnf, yum, pacman, zypper, or apk.
-
-If Node.js is missing, the installer asks whether to install Node.js LTS. Choose `y` to install it for BibTeX Cleaner website-bundle and npm/npx support, or press Enter/choose `n` to skip it.
-
-After the installer finishes, start the app.
-
-On Windows PowerShell:
-```powershell
-.\start_app.ps1
-```
-If PowerShell blocks scripts on your system, run:
-```powershell
-powershell -ExecutionPolicy Bypass -File .\start_app.ps1
-```
-
-From Command Prompt:
-```bat
-start_app.bat
-```
-On macOS/Linux:
-```bash
-sh start_app.sh
-```
-Or start manually after installation:
-```bat
-.venv\Scripts\python.exe -m uvicorn app:app --reload --host 127.0.0.1 --port 7654
-```
-```bash
-.venv/bin/python -m uvicorn app:app --reload --host 127.0.0.1 --port 7654
-```
-
-Browse to [http://127.0.0.1:7654](http://127.0.0.1:7654) for the app UI, which covers the entire workflow: project generation, modularization, formatting, float/figure review, beautification, response template, LaTeX diff generation, DOI-to-BibTeX, etc.
-
-When Step 1 creates a ZIP archive, the app shows an Overleaf handoff panel. Use **Open ZIP Folder** to locate the generated archive, then **Open Overleaf** and choose **New Project > Upload Project** in Overleaf. This keeps authentication and file selection inside your own browser session and avoids storing Overleaf credentials in Pub Assist.
-
-**LaTeX Diff supports:**
-```python
-latexdiff_engine = "online"   # Uses online form + local pdflatex
-latexdiff_engine = "local"    # Uses local MiKTeX/TeX Live/MacTeX latexdiff
-latexdiff_engine = "docker"   # Uses am009/git-latexdiff-web Docker worker
-```
-*Online mode only sends the main .tex file text to the online service.*
-
 ---
 
-## Generate a LaTeX Diff PDF
+## Features
 
-Running `notebooks/Step_8_generate_latexdiff_report.ipynb` creates a visual diff of two manuscript versions. Three methods are supported:
+### Project Builder and Modularization
 
-- **Online** (`latexdiff_engine = "online"`):  
-  Sends only the old and new main `.tex` files to [3142.nl/latex-diff/](https://3142.nl/latex-diff/), receives a diff `.tex` file, and compiles it locally.
-- **Local** (`latexdiff_engine = "local"`):  
-  Uses your installed MiKTeX, TeX Live, or MacTeX `latexdiff` and `pdflatex`.
-- **Docker** (`latexdiff_engine = "docker"`):  
-  Runs the `git-latexdiff-web` worker image from [Docker Hub](https://hub.docker.com/r/am009/latexdiff-web-worker): `am009/latexdiff-web-worker`.
-  Pub Assist prepares the worker folder with `old.zip`, `new.zip`, and `config.json`, then runs:
+The app guides you through the full manuscript preparation pipeline: initialize a structured LaTeX project, split a large manuscript into per-section files, format each sentence on its own line for clean Git diffs, reassemble section files into a single document, and run a final beautification pass.
+
+After Step 1 generates a ZIP archive, the app shows an Overleaf handoff panel. Use **Open ZIP Folder** to locate the archive, then **Open Overleaf** and choose **New Project > Upload Project**. Authentication stays in your own browser session.
+
+### Figure and Float Management
+
+Review all figures, tables, and other floats in your manuscript, then collect every figure actually used into a single folder for submission.
+
+### Reviewer Response Template
+
+Generates a ready-to-edit `response_to_reviewers_template.tex` structured for point-by-point replies.
+
+### LaTeX Diff PDF
+
+Produces a visual diff between two manuscript versions — additions in blue underline, deletions in red strikethrough. Three engines are supported:
+
+- **Online** — sends only the old and new `.tex` files to [3142.nl/latex-diff/](https://3142.nl/latex-diff/), receives a diff `.tex`, and compiles locally.
+- **Local** — uses your installed MiKTeX, TeX Live, or MacTeX `latexdiff` and `pdflatex`.
+- **Docker** — runs `am009/latexdiff-web-worker` from Docker Hub. Pub Assist prepares `old.zip`, `new.zip`, and `config.json` in a workspace folder, then runs:
   ```bash
   docker run --rm -v <workspace-folder>:/work am009/latexdiff-web-worker
   ```
+  To pre-download the image: `docker pull am009/latexdiff-web-worker`
 
-To pre-download or verify the Docker worker image:
-```bash
-docker pull am009/latexdiff-web-worker
+**Bibliography modes** (for local and Docker engines):
+
+- `bib = None` — default; use when `.bib` files are absent or when using pre-generated `.bbl` files.
+- `bib = "bibtex"` — BibTeX/natbib workflows with `.bib` files present in both projects.
+- `bib = "biber"` — Biber workflows with `.bib` files present in both projects.
+
+**Troubleshooting diffs:**
+
+- Docker failures: confirm Docker Desktop (Windows/macOS) or the Docker daemon (Linux) is running.
+- Perl errors on MiKTeX: install Perl (e.g. Strawberry Perl on Windows) and restart your terminal.
+- Missing `manuscript.tex`: verify `main_tex` matches the filename inside the zip.
+- `PermissionError` on Windows when deleting `latexdiff_runs/current`: Docker, OneDrive, Explorer, or antivirus may be holding the previous `.git` folder. Pub Assist will try to move the old workspace aside automatically; if it fails, close anything using that folder or set a fresh path such as `latexdiff_runs/current_2`.
+- To print build logs, enable `show_build_log = True`.
+
+### DOI to BibTeX
+
+The **DOI → BibTeX** card accepts DOIs, `https://doi.org/...` URLs, journal article URLs, and browser-saved HTML files. It tries DOI content negotiation first, then Crossref, and formats entries in a readable style. The generated entry is appended to your selected `.bib` file and previewed in the browser.
+
+For ScienceDirect URLs containing `/pii/...`, Pub Assist resolves the PII through Crossref and Elsevier metadata before fetching the page, avoiding most HTTP 403 blocks. If a publisher still returns 403, save the article page from your browser (`Ctrl+S` or a save-page extension) and select the local `.html` file instead.
+
+### BibTeX Cleaner
+
+Powered by [`bibtex-tidy`](https://github.com/FlamingTempura/bibtex-tidy), the cleaner offers two routes:
+
+- **Website bundle** — downloads the BibTeX Tidy JS bundle and runs it via Node.js. No npm package needed, but Node.js is required.
+- **Local npm/npx** — runs the npm package directly using `npx --yes bibtex-tidy@latest`. For a global install instead: `npm install -g bibtex-tidy`, then change the command field in the app to `bibtex-tidy`.
+
+The default preset mirrors the online BibTeX Tidy UI:
 ```
-
-The image comes from the upstream [`am009/git-latexdiff-web`](https://github.com/am009/git-latexdiff-web) project. Its command-line worker expects this folder layout:
-```text
-<workspace-folder>/
-|-- old.zip
-|-- new.zip
-`-- config.json
-```
-After a successful Docker run, Pub Assist expects:
-```text
-<workspace-folder>/
-|-- diff.pdf                  # final visual diff PDF
-|-- diff.tex                  # convenience copy of the generated diffed main tex
-`-- git-latexdiff/
-    |-- new/
-    |   |-- manuscript.tex     # generated diffed main tex from the worker
-    |   `-- manuscript.tex.orig
-    |-- old-main-fl.tex
-    `-- new-main-fl.tex
-```
-If Docker exits without a root-level `diff.pdf`, Pub Assist now treats that as a failed run and prints the Docker logs plus the artifact paths it did find.
-
-The notebook accepts either full project folders, zip files, or folders containing a single `.zip` file containing `manuscript.tex`:
-```python
-old_project = r"old"
-new_project = r"new"
-main_tex = "manuscript.tex"
-bib = None
-latexdiff_engine = "online"
-confirm_online_upload = True
-run_worker = True
-```
-
-### Bibliography Modes
-
-- `bib = None` : Default. Use this when the projects do not include the needed `.bib` files, when using generated `.bbl` files directly, or when bibliography regeneration is not needed.
-- `bib = "bibtex"` : For BibTeX/natbib workflows only when the required `.bib` files are present in both old and new projects.
-- `bib = "biber"` : For biber workflows only when the required `.bib` files are present in both old and new projects.
-
-### Diff Styles
-
-- Blue underlined for additions, red strikethrough for deletions (default).
-- Style is managed in `python_files/latexdiff_web.py`.
-
-### Troubleshooting
-
-- If Docker fails, confirm Docker Desktop is running on Windows/macOS or the Docker daemon is running on Linux.
-- For a Perl error (`MiKTeX could not find the script engine 'perl'`), install Perl and restart your terminal/session.
-- If `manuscript.tex` is missing, verify `main_tex` matches inside zip files.
-- If Windows reports `PermissionError` while deleting `latexdiff_runs/current`, Docker, OneDrive, Explorer, or antivirus may still be holding the previous run's generated `.git` folder. Pub Assist will try to move that old workspace aside automatically; if Windows still blocks it, close anything using the folder or choose a fresh workspace folder such as `latexdiff_runs/current_2`.
-- To print build logs, enable `show_build_log = True` in the notebook.
-
----
-
-## Creating BibTeX from DOIs
-
-Launch `notebooks/Generate_BibTeX_from_DOIs.ipynb`, update:
-
-```python
-doi_list = [
-    "10.1038/nphys1170",
-    "https://doi.org/10.1145/3375630",
-]
-output_bib_file = "references_from_dois.bib"
-```
-Run the notebook. It tries DOI content negotiation first, then Crossref, and formats entries in a readable way.
-
-In the web app, the **DOI -> BibTeX** card accepts DOIs, `https://doi.org/...` URLs, journal article URLs, and browser-saved article HTML files. It uses a DOI already present in the input first; otherwise it saves the journal page to a temporary local HTML file, extracts article metadata such as `citation_doi`, DOI links, then page text, deletes the temporary file, and appends the generated entry to the selected reference file. The generated BibTeX is also shown in the browser preview box.
-
-For ScienceDirect URLs that contain `/pii/...`, Pub Assist first resolves the PII through Crossref and then Elsevier metadata before trying to fetch the page HTML. This avoids many ScienceDirect HTTP 403 blocks.
-
-Some publisher sites return HTTP 403 for automated page reads. In that case, save the article page from your browser with `Ctrl+S` or a save-page extension such as [Save Page WE](https://chromewebstore.google.com/detail/save-page-we/dhhpefjklgkmgeafimnjhojgjamoafof), then select the saved `.html` or `.htm` file in the app. This lets Pub Assist parse the local file without trying to scrape the publisher site again.
-
-## Cleaning BibTeX Files
-
-The web app includes a **BibTeX Cleaner** card powered by [`bibtex-tidy`](https://github.com/FlamingTempura/bibtex-tidy). It offers two automated routes:
-
-1. **Website bundle route:** Pub Assist downloads the online [BibTeX Tidy](https://flamingtempura.github.io/bibtex-tidy/) JavaScript bundle, runs the same tidy function used by the website, then writes the cleaned `.bib` file and preview back into the app. This avoids installing the npm `bibtex-tidy` package, but still requires Node.js as the JavaScript runtime.
-2. **Local npm/npx route:** Pub Assist runs the npm package directly. This route requires Node.js/npm/npx and can use either one-time `npx` execution or a global npm install.
-
-The local npm/npx route's default command is:
-
-```text
-npx --yes bibtex-tidy@latest
-```
-
-That means Node.js/npm is required for the local npm/npx route, and the first run may download `bibtex-tidy`. If you prefer a global npm install, run:
-
-```text
-npm install -g bibtex-tidy
-```
-
-Then change the command field in the app to:
-
-```text
-bibtex-tidy
-```
-
-The default cleaner preset matches the shared online BibTeX Tidy UI:
-
-```text
 --curly --numeric --tab --align=13 --duplicates=key --no-escape --sort-fields --no-remove-dupe-fields
 ```
 
-The app exposes the same major option groups from the online UI:
+The app exposes all major option groups: indentation, whitespace, value formatting, sorting, duplicate detection and merging, and cleanup options.
 
-- **Indent:** tabs or spaces.
-- **Whitespace:** align values, wrap values, and blank lines.
-- **Values:** braces, numeric values, month abbreviation, URL encoding, empty-field removal, duplicate-field removal, and maximum author truncation.
-- **Sorting:** sort entries and sort fields using the default field order from BibTeX Tidy.
-- **Duplicates:** check matching keys, DOIs, similar citations, and abstracts; optionally merge duplicates.
-- **Clean up:** remove selected fields, comments, tidy comments, lowercase fields, generate keys, and trailing commas.
+### TexCount
 
----
+Select a `.tex` file or paste content directly into the TexCount box. Pub Assist sends it to the [TeXcount web service](https://app.uio.no/ifi/texcount/online.php) and displays the compact count summary in the results panel, optionally saving a `*_texcount.html` report.
 
-## Copying Style Files
+Note: the online service analyses only the submitted content and cannot follow `\input` or `\include` subfiles. For subfile-aware counting, switch to **Local texcount command**, which runs `texcount` with `-utf8`, `-inc`, and `-sum`. MiKTeX/TeX Live/MacTeX include TexCount, but Windows/MiKTeX users may also need Perl.
 
-The app and `notebooks/copy_style_files_to_folder.ipynb` can copy `.sty` files from MiKTeX, TeX Live, or MacTeX. On Linux/macOS, leave the TeX path blank when `kpsewhich` is available; Pub Assist will ask `kpsewhich` where each package lives. You can still provide a manual TeX `latex/` folder if needed.
+If the online service fails with `CERTIFICATE_VERIFY_FAILED`, re-run the installer so the app environment gets `certifi`, then restart. On networks with institutional SSL inspection, the local route is more reliable.
 
----
+### Submission Word Documents
 
-## Counting Words With TexCount
+Auto-generates `.docx` files required for journal submission: cover letters (original and revised), highlights, declarations, and title pages. When `double_blind` is set, both blinded and author versions are written.
 
-The web app Utilities section includes **TexCount**. Select a main `.tex` file, or paste a text/LaTeX blob directly into the TexCount text box. Pub Assist writes:
+### Style File Copy
 
-- `*_texcount.txt`
-- `*_texcount.html` when HTML output is enabled
-
-By default, Pub Assist sends the selected `.tex` file content, or the pasted text if provided, to the [TeXcount web service](https://app.uio.no/ifi/texcount/online.php) and saves the returned report locally. The app result panel shows only the compact count dictionary, so you do not need to open the HTML report just to see the totals. The online service analyses only the submitted content; it does not read local `\input` or `\include` subfiles from your project folder.
-
-If online TexCount fails with `CERTIFICATE_VERIFY_FAILED`, run the installer again so the app environment gets `certifi`, then restart the app. Pub Assist uses that certificate bundle for the TeXcount HTTPS request. On computers behind institutional SSL inspection, the online service may still be blocked; use the local TexCount route for a `.tex` file in that case.
-
-If you need subfile-aware counting, choose **Local texcount command** in the app. Local mode uses the `texcount` command with `-utf8`, optionally `-inc` for included files and `-sum` for summary output. MiKTeX, TeX Live, and MacTeX commonly include TexCount, but Windows/MiKTeX users may also need Perl installed for the local command to run.
+Copies `.sty` files from your TeX distribution into the project folder. On Linux/macOS, leave the TeX path blank if `kpsewhich` is available; Pub Assist will locate each package automatically. A manual path can be provided if needed.
 
 ---
 
-## Generating Submission Word Documents
+## Notebooks
 
-Edit your manuscript metadata in `notebooks/Step_9_generate_submission_word_documents.ipynb`:
+The notebooks in `notebooks/` cover the same workflow as the browser app. They are useful when a long step benefits from cell-by-cell inspection, when you want to tweak a workflow before running it on a manuscript, or when the app feels slow for a particular task.
 
-```python
-journal_name = "[Journal Name]"
-paper_title = "[Full Manuscript Title]"
-double_blind = True
-clean_output_folder = True
-authors = [...]
-highlights = [...]
-```
-Generated `.docx` files go in `submission_word_documents/`. If `double_blind` is set, both blinded and author title files are written. Two cover letters are produced: original and revised, with fields for manuscript ID, revision, major changes, and other declarations.
+| Notebook | Purpose |
+|---|---|
+| `Modularize_Latex_file_in_Latex_project.ipynb` | Split a single `.tex` file into per-section files |
+| `New_line_each_sentence_each_section_in_Sections_folder.ipynb` | One sentence per line for cleaner diffs |
+| `Step_1_generate_latex_project.ipynb` | Initialize a structured LaTeX project |
+| `Step_2_reassemble_document_from_project.ipynb` | Merge section files into one document |
+| `Step_3_clean_latex_files.ipynb` | Remove comments and tidy whitespace |
+| `Step_4_review_floats.ipynb` | List and review figures, tables, and floats |
+| `Step_5_put_all_figures_used_in_a_sep_fig_folder.ipynb` | Collect used figures into one directory |
+| `Step_6_beautification.ipynb` | Final formatting pass |
+| `Step_7_generate_reviewer_response_template.ipynb` | Generate `response_to_reviewers_template.tex` |
+| `Step_8_generate_latexdiff_report.ipynb` | Visual diff between two manuscript versions |
+| `Step_9_generate_submission_word_documents.ipynb` | Export cover letters, highlights, and declarations as `.docx` |
+| `Generate_BibTeX_from_DOIs.ipynb` | Build a `.bib` file from a list of DOIs |
+| `copy_style_files_to_folder.ipynb` | Copy journal class/style files into a project |
+
+### Quick Start
+
+1. Install Python 3.x and Jupyter.
+2. Open a notebook from `notebooks/` and fill in the user-input cell near the top.
+3. Run cells in order.
+
+For `Step_8` (LaTeX diff), install a TeX distribution with `pdflatex` — MiKTeX on Windows, TeX Live on Linux, MacTeX or TeX Live on macOS. Ensure `latexdiff` and `bibtex`/`biber` are available. If MiKTeX reports a missing Perl script engine, install Strawberry Perl and restart your terminal. Docker Desktop (Windows/macOS) or Docker Engine (Linux) is required for the Docker diff engine.
+
+For `Step_9` (Word documents), install `python-docx`.
 
 ---
 
@@ -336,39 +193,33 @@ Generated `.docx` files go in `submission_word_documents/`. If `double_blind` is
 
 ```text
 pub_assist/
-|-- .gitignore
-|-- Readme.md
-|-- app.py
-|-- requirements_app.txt
-|-- install_app.bat
-|-- install_app.ps1
-|-- install_app.sh
-|-- start_app.bat
-|-- start_app.ps1
-|-- start_app.sh
-|-- notebooks/
-|   |-- Modularize_Latex_file_in_Latex_project.ipynb
-|   |-- New_line_each_sentence_each_section_in_Sections_folder.ipynb
-|   |-- Step_1_generate_latex_project.ipynb
-|   |-- Step_2_reassemble_document_from_project.ipynb
-|   |-- Step_3_clean_latex_files.ipynb
-|   |-- Step_4_review_floats.ipynb
-|   |-- Step_5_put_all_figures_used_in_a_sep_fig_folder.ipynb
-|   |-- Step_6_beautification.ipynb
-|   |-- Step_7_generate_reviewer_response_template.ipynb
-|   |-- Step_8_generate_latexdiff_report.ipynb
-|   |-- Step_9_generate_submission_word_documents.ipynb
-|   |-- Generate_BibTeX_from_DOIs.ipynb
-|   `-- copy_style_files_to_folder.ipynb
-|-- Resources/
-|   |-- endfloat.md
-|   `-- symbols.md
-|-- static/
-|   |-- app.js
-|   |-- index.html
-|   `-- style.css
-`-- python_files/
-    |-- beautify.py
-    |-- latexdiff_web.py
-    `-- submission_docs.py
+├── app.py
+├── requirements_app.txt
+├── install_app.bat / .ps1 / .sh
+├── start_app.bat / .ps1 / .sh
+├── notebooks/
+│   ├── Modularize_Latex_file_in_Latex_project.ipynb
+│   ├── New_line_each_sentence_each_section_in_Sections_folder.ipynb
+│   ├── Step_1_generate_latex_project.ipynb
+│   ├── Step_2_reassemble_document_from_project.ipynb
+│   ├── Step_3_clean_latex_files.ipynb
+│   ├── Step_4_review_floats.ipynb
+│   ├── Step_5_put_all_figures_used_in_a_sep_fig_folder.ipynb
+│   ├── Step_6_beautification.ipynb
+│   ├── Step_7_generate_reviewer_response_template.ipynb
+│   ├── Step_8_generate_latexdiff_report.ipynb
+│   ├── Step_9_generate_submission_word_documents.ipynb
+│   ├── Generate_BibTeX_from_DOIs.ipynb
+│   └── copy_style_files_to_folder.ipynb
+├── Resources/
+│   ├── endfloat.md
+│   └── symbols.md
+├── static/
+│   ├── app.js
+│   ├── index.html
+│   └── style.css
+└── python_files/
+    ├── beautify.py
+    ├── latexdiff_web.py
+    └── submission_docs.py
 ```
