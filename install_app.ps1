@@ -90,6 +90,21 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host ""
+if (Get-Command node -ErrorAction SilentlyContinue) {
+    Write-Host "Optional BibTeX Cleaner website-bundle route: Node.js found."
+    if (Get-Command npx -ErrorAction SilentlyContinue) {
+        Write-Host "Optional BibTeX Cleaner npm/npx route: npx found."
+        Write-Host "  Pub Assist can run: npx --yes bibtex-tidy@latest"
+    } else {
+        Write-Host "Optional BibTeX Cleaner npm/npx route: npx was not found."
+    }
+} else {
+    Write-Host "Optional BibTeX Cleaner engines: Node.js was not found."
+    Write-Host "  Install Node.js LTS to use the website-bundle or npm/npx cleaner engines:"
+    Write-Host "  winget install OpenJS.NodeJS.LTS"
+}
+
+Write-Host ""
 Write-Host "Pub Assist is ready."
 Write-Host "Launch it with .\start_app.ps1"
 Write-Host ""

@@ -62,6 +62,8 @@ echo Installing Pub Assist requirements...
 ".venv\Scripts\python.exe" -m pip install -r requirements_app.txt
 if errorlevel 1 goto :pip_failed
 
+call :check_node
+
 echo.
 echo Pub Assist is ready.
 echo Launch it with start_app.bat.
@@ -74,6 +76,25 @@ echo.
 echo Dependency installation failed. Check the error above, then run install_app.bat again.
 pause
 exit /b 1
+
+:check_node
+echo.
+where node >nul 2>nul
+if errorlevel 1 (
+  echo Optional BibTeX Cleaner engines: Node.js was not found.
+  echo   Install Node.js LTS to use the website-bundle or npm/npx cleaner engines:
+  echo   winget install OpenJS.NodeJS.LTS
+) else (
+  echo Optional BibTeX Cleaner website-bundle route: Node.js found.
+  where npx >nul 2>nul
+  if errorlevel 1 (
+    echo Optional BibTeX Cleaner npm/npx route: npx was not found.
+  ) else (
+    echo Optional BibTeX Cleaner npm/npx route: npx found.
+    echo   Pub Assist can run: npx --yes bibtex-tidy@latest
+  )
+)
+goto :eof
 
 :find_python
 set "PY_CMD="

@@ -15,6 +15,7 @@ Pub Assist also comes with a local web app that enables the complete workflow th
 - **Figure/floats organization:** Review and gather all figures used in one folder.
 - **Reviewer response template:** Create a structured response file in LaTeX.
 - **DOI to BibTeX:** Retrieve BibTeX entries automatically from DOIs, DOI URLs, journal article URLs, or browser-saved article HTML files, then append the BibTeX entry to an existing `.bib` file.
+- **BibTeX Cleaner:** Tidy existing `.bib` files with `bibtex-tidy`, using option groups that mirror the online BibTeX Tidy UI.
 - **TexCount:** Generate text and optional HTML word-count reports through the TeXcount website, with an optional local `texcount` fallback.
 - **LaTeX diff PDF:** Visually compare manuscript versions using MiKTeX, TeX Live, or MacTeX locally; Docker; or an online service.
 - **Submission Word Docs:** Auto-generate `.docx` files required for journal submission (cover letter, highlights, declarations, etc.) from project inputs.
@@ -249,6 +250,46 @@ In the web app, the **DOI -> BibTeX** card accepts DOIs, `https://doi.org/...` U
 For ScienceDirect URLs that contain `/pii/...`, Pub Assist first resolves the PII through Crossref and then Elsevier metadata before trying to fetch the page HTML. This avoids many ScienceDirect HTTP 403 blocks.
 
 Some publisher sites return HTTP 403 for automated page reads. In that case, save the article page from your browser with `Ctrl+S` or a save-page extension such as [Save Page WE](https://chromewebstore.google.com/detail/save-page-we/dhhpefjklgkmgeafimnjhojgjamoafof), then select the saved `.html` or `.htm` file in the app. This lets Pub Assist parse the local file without trying to scrape the publisher site again.
+
+## Cleaning BibTeX Files
+
+The web app includes a **BibTeX Cleaner** card powered by [`bibtex-tidy`](https://github.com/FlamingTempura/bibtex-tidy). It offers two automated routes:
+
+1. **Website bundle route:** Pub Assist downloads the online [BibTeX Tidy](https://flamingtempura.github.io/bibtex-tidy/) JavaScript bundle, runs the same tidy function used by the website, then writes the cleaned `.bib` file and preview back into the app. This avoids installing the npm `bibtex-tidy` package, but still requires Node.js as the JavaScript runtime.
+2. **Local npm/npx route:** Pub Assist runs the npm package directly. This route requires Node.js/npm/npx and can use either one-time `npx` execution or a global npm install.
+
+The local npm/npx route's default command is:
+
+```text
+npx --yes bibtex-tidy@latest
+```
+
+That means Node.js/npm is required for the local npm/npx route, and the first run may download `bibtex-tidy`. If you prefer a global npm install, run:
+
+```text
+npm install -g bibtex-tidy
+```
+
+Then change the command field in the app to:
+
+```text
+bibtex-tidy
+```
+
+The default cleaner preset matches the shared online BibTeX Tidy UI:
+
+```text
+--curly --numeric --tab --align=13 --duplicates=key --no-escape --sort-fields --no-remove-dupe-fields
+```
+
+The app exposes the same major option groups from the online UI:
+
+- **Indent:** tabs or spaces.
+- **Whitespace:** align values, wrap values, and blank lines.
+- **Values:** braces, numeric values, month abbreviation, URL encoding, empty-field removal, duplicate-field removal, and maximum author truncation.
+- **Sorting:** sort entries and sort fields using the default field order from BibTeX Tidy.
+- **Duplicates:** check matching keys, DOIs, similar citations, and abstracts; optionally merge duplicates.
+- **Clean up:** remove selected fields, comments, tidy comments, lowercase fields, generate keys, and trailing commas.
 
 ---
 

@@ -109,6 +109,20 @@ echo "Installing Pub Assist requirements..."
 .venv/bin/python -m pip install -r requirements_app.txt
 
 echo
+if command -v node >/dev/null 2>&1; then
+  echo "Optional BibTeX Cleaner website-bundle route: Node.js found."
+  if command -v npx >/dev/null 2>&1; then
+    echo "Optional BibTeX Cleaner npm/npx route: npx found."
+    echo "  Pub Assist can run: npx --yes bibtex-tidy@latest"
+  else
+    echo "Optional BibTeX Cleaner npm/npx route: npx was not found."
+  fi
+else
+  echo "Optional BibTeX Cleaner engines: Node.js was not found."
+  echo "  Install Node.js LTS to use the website-bundle or npm/npx cleaner engines, then rerun this installer."
+fi
+
+echo
 echo "Pub Assist is ready."
 echo "Launch it with:"
 echo "  sh start_app.sh"

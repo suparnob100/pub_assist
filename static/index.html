@@ -48,6 +48,7 @@
     <a href="#step-onesentence" class="nav-item">One Sentence / Line</a>
     <a href="#step-texcount" class="nav-item">TexCount</a>
     <a href="#step-doi2bib" class="nav-item">DOI → BibTeX</a>
+    <a href="#step-bibclean" class="nav-item">BibTeX Cleaner</a>
     <a href="#step-copystyles" class="nav-item">Copy Style Files</a>
   </nav>
 
@@ -550,6 +551,272 @@
       </div>
     </section>
 
+    <!-- BibTeX Cleaner -->
+    <section class="tool-card" id="step-bibclean">
+      <div class="card-header">
+        <span class="card-title">BibTeX Cleaner</span>
+        <span class="card-desc">Tidy an existing <code>.bib</code> file using <code>bibtex-tidy</code> with the online BibTeX Tidy style options.</span>
+      </div>
+      <div class="card-body">
+        <div class="route-options">
+          <div class="route-card">
+            <span class="route-title">Route 1: Website Bundle</span>
+            <p>Default. Pub Assist downloads the BibTeX Tidy website's JavaScript bundle, runs the same tidy function, then saves and previews the cleaned BibTeX here. This avoids installing the npm package.</p>
+          </div>
+          <div class="route-card">
+            <span class="route-title">Route 2: Local npm/npx</span>
+            <p>Use the npm package directly. Keep the default <code>npx --yes bibtex-tidy@latest</code> command, or install globally with <code>npm install -g bibtex-tidy</code> and set the command to <code>bibtex-tidy</code>.</p>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Cleaner engine</label>
+          <select id="bibclean-service">
+            <option value="website" selected>Website bundle (download site JS, return cleaned BibTeX)</option>
+            <option value="local">Local npm/npx command</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Input .bib file</label>
+          <input type="text" id="bibclean-input" placeholder="/path/to/references.bib">
+        </div>
+        <div class="form-row">
+          <label>Output .bib file <span class="hint">(blank = *_cleaned.bib beside input)</span></label>
+          <input type="text" id="bibclean-output" placeholder="/path/to/references_cleaned.bib">
+        </div>
+        <div class="form-row">
+          <label>bibtex-tidy command <span class="hint">(local npm/npx engine only)</span></label>
+          <input type="text" id="bibclean-command" value="npx --yes bibtex-tidy@latest">
+        </div>
+        <details class="option-group" open>
+          <summary>Write mode</summary>
+          <div class="form-grid two-col">
+            <div class="form-row-check">
+              <input type="checkbox" id="bibclean-modify">
+              <label for="bibclean-modify">Modify input file</label>
+            </div>
+            <div class="form-row-check">
+              <input type="checkbox" id="bibclean-backup" checked>
+              <label for="bibclean-backup">Create backup when modifying</label>
+            </div>
+          </div>
+        </details>
+        <details class="option-group" open>
+          <summary>Indent</summary>
+          <div class="form-grid two-col">
+            <div class="form-row-check">
+              <input type="radio" name="bibclean-indent" id="bibclean-indent-tab" value="tab" checked>
+              <label for="bibclean-indent-tab">Indent with tabs</label>
+            </div>
+            <div class="form-row-check">
+              <input type="radio" name="bibclean-indent" id="bibclean-indent-space" value="space">
+              <label for="bibclean-indent-space">Indent with spaces</label>
+            </div>
+            <div class="form-row">
+              <label>Space count</label>
+              <input type="number" id="bibclean-space" value="2" min="0">
+            </div>
+          </div>
+        </details>
+        <details class="option-group" open>
+          <summary>Whitespace</summary>
+          <div class="form-grid two-col">
+            <div class="form-row-check">
+              <input type="checkbox" id="bibclean-align" checked>
+              <label for="bibclean-align">Align values</label>
+            </div>
+            <div class="form-row">
+              <label>Align column</label>
+              <input type="number" id="bibclean-align-column" value="13" min="1">
+            </div>
+            <div class="form-row-check">
+              <input type="checkbox" id="bibclean-wrap">
+              <label for="bibclean-wrap">Wrap values</label>
+            </div>
+            <div class="form-row">
+              <label>Wrap column</label>
+              <input type="number" id="bibclean-wrap-column" value="80" min="20">
+            </div>
+            <div class="form-row-check">
+              <input type="checkbox" id="bibclean-blank-lines">
+              <label for="bibclean-blank-lines">Insert blank lines</label>
+            </div>
+          </div>
+        </details>
+        <details class="option-group" open>
+          <summary>Values</summary>
+          <div class="form-grid two-col">
+            <div class="form-row-check">
+              <input type="checkbox" id="bibclean-curly" checked>
+              <label for="bibclean-curly">Enclose values in braces</label>
+            </div>
+            <div class="form-row-check">
+              <input type="checkbox" id="bibclean-numeric" checked>
+              <label for="bibclean-numeric">Use numeric values where possible</label>
+            </div>
+            <div class="form-row-check">
+              <input type="checkbox" id="bibclean-enclosing-braces">
+              <label for="bibclean-enclosing-braces">Enclose values in double braces</label>
+            </div>
+            <div class="form-row">
+              <label>Double-brace fields</label>
+              <input type="text" id="bibclean-enclosing-braces-fields" placeholder="title shorttitle">
+            </div>
+            <div class="form-row-check">
+              <input type="checkbox" id="bibclean-remove-braces">
+              <label for="bibclean-remove-braces">Remove braces</label>
+            </div>
+            <div class="form-row">
+              <label>Remove-brace fields</label>
+              <input type="text" id="bibclean-remove-braces-fields" placeholder="abstract note">
+            </div>
+            <div class="form-row-check">
+              <input type="checkbox" id="bibclean-strip-enclosing">
+              <label for="bibclean-strip-enclosing">Strip double-braced values</label>
+            </div>
+            <div class="form-row-check">
+              <input type="checkbox" id="bibclean-months">
+              <label for="bibclean-months">Abbreviate months</label>
+            </div>
+            <div class="form-row-check">
+              <input type="checkbox" id="bibclean-drop-caps">
+              <label for="bibclean-drop-caps">Drop all caps</label>
+            </div>
+            <div class="form-row-check">
+              <input type="checkbox" id="bibclean-escape">
+              <label for="bibclean-escape">Escape special characters</label>
+            </div>
+            <div class="form-row-check">
+              <input type="checkbox" id="bibclean-encode-urls">
+              <label for="bibclean-encode-urls">Encode URLs</label>
+            </div>
+            <div class="form-row-check">
+              <input type="checkbox" id="bibclean-empty">
+              <label for="bibclean-empty">Remove empty fields</label>
+            </div>
+            <div class="form-row-check">
+              <input type="checkbox" id="bibclean-dupe-fields">
+              <label for="bibclean-dupe-fields">Remove duplicate fields</label>
+            </div>
+            <div class="form-row-check">
+              <input type="checkbox" id="bibclean-max-authors">
+              <label for="bibclean-max-authors">Maximum authors</label>
+            </div>
+            <div class="form-row">
+              <label>Maximum authors count</label>
+              <input type="number" id="bibclean-max-authors-count" value="20" min="1">
+            </div>
+          </div>
+        </details>
+        <details class="option-group" open>
+          <summary>Sorting</summary>
+          <div class="form-grid two-col">
+            <div class="form-row-check">
+              <input type="checkbox" id="bibclean-sort">
+              <label for="bibclean-sort">Sort bibliography entries</label>
+            </div>
+            <div class="form-row">
+              <label>Entry sort fields</label>
+              <input type="text" id="bibclean-sort-order" placeholder="key year -title">
+            </div>
+            <div class="form-row-check">
+              <input type="checkbox" id="bibclean-sort-fields" checked>
+              <label for="bibclean-sort-fields">Sort fields</label>
+            </div>
+            <div class="form-row">
+              <label>Field order</label>
+              <textarea id="bibclean-sort-field-order" rows="4" spellcheck="false">title shorttitle author year month day journal booktitle location on publisher address series volume number pages doi isbn issn url urldate copyright category note metadata</textarea>
+            </div>
+          </div>
+        </details>
+        <details class="option-group" open>
+          <summary>Duplicates</summary>
+          <div class="form-grid two-col">
+            <div class="form-row-check">
+              <input type="checkbox" id="bibclean-check-dupes" checked>
+              <label for="bibclean-check-dupes">Check for duplicates</label>
+            </div>
+            <div class="form-row-check">
+              <input type="checkbox" id="bibclean-dupe-key" checked>
+              <label for="bibclean-dupe-key">Matching keys</label>
+            </div>
+            <div class="form-row-check">
+              <input type="checkbox" id="bibclean-dupe-doi">
+              <label for="bibclean-dupe-doi">Matching DOIs</label>
+            </div>
+            <div class="form-row-check">
+              <input type="checkbox" id="bibclean-dupe-citation">
+              <label for="bibclean-dupe-citation">Similar author and title</label>
+            </div>
+            <div class="form-row-check">
+              <input type="checkbox" id="bibclean-dupe-abstract">
+              <label for="bibclean-dupe-abstract">Similar abstracts</label>
+            </div>
+            <div class="form-row-check">
+              <input type="checkbox" id="bibclean-merge">
+              <label for="bibclean-merge">Merge duplicate entries</label>
+            </div>
+            <div class="form-row">
+              <label>Merge strategy</label>
+              <select id="bibclean-merge-strategy">
+                <option value="combine" selected>combine</option>
+                <option value="first">first</option>
+                <option value="last">last</option>
+                <option value="overwrite">overwrite</option>
+              </select>
+            </div>
+          </div>
+        </details>
+        <details class="option-group" open>
+          <summary>Clean up</summary>
+          <div class="form-grid two-col">
+            <div class="form-row-check">
+              <input type="checkbox" id="bibclean-omit">
+              <label for="bibclean-omit">Remove fields</label>
+            </div>
+            <div class="form-row">
+              <label>Fields to remove</label>
+              <input type="text" id="bibclean-omit-list" placeholder="abstract file keywords">
+            </div>
+            <div class="form-row-check">
+              <input type="checkbox" id="bibclean-comments">
+              <label for="bibclean-comments">Remove comments</label>
+            </div>
+            <div class="form-row-check">
+              <input type="checkbox" id="bibclean-tidy-comments" checked>
+              <label for="bibclean-tidy-comments">Tidy comments</label>
+            </div>
+            <div class="form-row-check">
+              <input type="checkbox" id="bibclean-lowercase" checked>
+              <label for="bibclean-lowercase">Lowercase fields</label>
+            </div>
+            <div class="form-row-check">
+              <input type="checkbox" id="bibclean-generate-keys">
+              <label for="bibclean-generate-keys">Generate citation keys</label>
+            </div>
+            <div class="form-row">
+              <label>Citation key pattern</label>
+              <input type="text" id="bibclean-generate-pattern" placeholder="[auth][year][veryshorttitle]">
+            </div>
+            <div class="form-row-check">
+              <input type="checkbox" id="bibclean-trailing">
+              <label for="bibclean-trailing">Trailing commas</label>
+            </div>
+            <div class="form-row">
+              <label>Extra options <span class="hint">(optional)</span></label>
+              <input type="text" id="bibclean-extra" placeholder="--curly --numeric">
+            </div>
+          </div>
+        </details>
+        <p class="hint">The default cleaner preset matches the shared online UI: braces, numeric values, tab indent, align at column 13, duplicate-key check, no escaping, sorted fields, and duplicate fields kept. Default mode writes a cleaned copy; turn on Modify input file only when you want in-place tidying. The website-bundle engine avoids npm package installation, but it still needs Node.js to execute the website JavaScript.</p>
+        <button class="btn-run" onclick="runBibtexClean()">Clean BibTeX</button>
+        <div class="result-box" id="bibclean-result"></div>
+        <div class="form-row">
+          <label>Cleaned BibTeX preview</label>
+          <textarea id="bibclean-preview" rows="10" readonly placeholder="Cleaned BibTeX preview will appear here after the run."></textarea>
+        </div>
+      </div>
+    </section>
+
     <!-- Copy Style Files -->
     <section class="tool-card" id="step-copystyles">
       <div class="card-header">
@@ -577,6 +844,6 @@
   </main>
 </div>
 
-<script src="/static/app.js?v=20260604-texcount-compact"></script>
+<script src="/static/app.js?v=20260605-bibtex-cleaner-ui"></script>
 </body>
 </html>

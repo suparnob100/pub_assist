@@ -94,6 +94,8 @@ const PATH_BUTTONS = {
   'ld-workspace': { action: 'open' },
   'doi-output': { action: 'select', mode: 'file', fileKind: 'bib', title: 'Select reference .bib file' },
   'doi-html-files': { action: 'select', mode: 'file', fileKind: 'html', title: 'Select saved article HTML file', appendSelection: true },
+  'bibclean-input': { action: 'select', mode: 'file', fileKind: 'bib', title: 'Select BibTeX file' },
+  'bibclean-output': { action: 'open' },
   'cs-file': { action: 'select', mode: 'file', fileKind: 'tex', title: 'Select main .tex file' },
   'cs-out': { action: 'open' },
   'cs-miktex': { action: 'select', mode: 'folder', title: 'Select TeX latex folder' },
@@ -409,6 +411,77 @@ async function runDoi2Bib() {
 function updateBibtexPreview(text) {
   const preview = document.getElementById('doi-preview');
   if (preview) preview.value = text || '';
+}
+
+function updateBibtexCleanPreview(text) {
+  const preview = document.getElementById('bibclean-preview');
+  if (preview) preview.value = text || '';
+}
+
+async function runBibtexClean() {
+  const btn = event.target; btn.disabled = true;
+  updateBibtexCleanPreview('');
+  const checked = (id) => document.getElementById(id).checked;
+  const value = (id) => document.getElementById(id).value.trim();
+  const data = await post('bibtex-clean', {
+    input_bib_file:           value('bibclean-input'),
+    output_bib_file:          value('bibclean-output'),
+    service:                  value('bibclean-service'),
+    command:                  value('bibclean-command'),
+    modify_input:             checked('bibclean-modify'),
+    backup:                   checked('bibclean-backup'),
+    indent_mode:              document.querySelector('input[name="bibclean-indent"]:checked').value,
+    space_count:              Number(value('bibclean-space') || 2),
+    align_values:             checked('bibclean-align'),
+    align_column:             Number(value('bibclean-align-column') || 13),
+    wrap_values:              checked('bibclean-wrap'),
+    wrap_column:              Number(value('bibclean-wrap-column') || 80),
+    blank_lines:              checked('bibclean-blank-lines'),
+    curly:                    checked('bibclean-curly'),
+    enclosing_braces:         checked('bibclean-enclosing-braces'),
+    enclosing_braces_fields:  value('bibclean-enclosing-braces-fields'),
+    remove_braces:            checked('bibclean-remove-braces'),
+    remove_braces_fields:     value('bibclean-remove-braces-fields'),
+    strip_enclosing_braces:   checked('bibclean-strip-enclosing'),
+    numeric:                  checked('bibclean-numeric'),
+    months:                   checked('bibclean-months'),
+    drop_all_caps:            checked('bibclean-drop-caps'),
+    escape:                   checked('bibclean-escape'),
+    encode_urls:              checked('bibclean-encode-urls'),
+    remove_empty_fields:      checked('bibclean-empty'),
+    remove_duplicate_fields:  checked('bibclean-dupe-fields'),
+    max_authors:              checked('bibclean-max-authors'),
+    max_authors_count:        Number(value('bibclean-max-authors-count') || 20),
+    sort_entries:             checked('bibclean-sort'),
+    sort_order:               value('bibclean-sort-order'),
+    sort_fields:              checked('bibclean-sort-fields'),
+    sort_field_order:         value('bibclean-sort-field-order'),
+    check_duplicates:         checked('bibclean-check-dupes'),
+    duplicate_keys:           checked('bibclean-dupe-key'),
+    duplicate_dois:           checked('bibclean-dupe-doi'),
+    duplicate_citations:      checked('bibclean-dupe-citation'),
+    duplicate_abstracts:      checked('bibclean-dupe-abstract'),
+    merge_duplicates:         checked('bibclean-merge'),
+    merge_strategy:           value('bibclean-merge-strategy'),
+    omit_fields:              checked('bibclean-omit'),
+    omit_field_list:          value('bibclean-omit-list'),
+    strip_comments:           checked('bibclean-comments'),
+    tidy_comments:            checked('bibclean-tidy-comments'),
+    lowercase:                checked('bibclean-lowercase'),
+    generate_keys:            checked('bibclean-generate-keys'),
+    generate_key_pattern:     value('bibclean-generate-pattern'),
+    trailing_commas:          checked('bibclean-trailing'),
+    extra_options:            value('bibclean-extra'),
+  });
+  if (data.status === 'running') {
+    showInfo('bibclean-result', `Job started (${data.job_id}). Cleaning BibTeX...`);
+    pollJob(data.job_id, 'bibclean-result', null, (result) => {
+      updateBibtexCleanPreview(result && result.preview ? result.preview : '');
+    }).then(() => { btn.disabled = false; });
+  } else {
+    btn.disabled = false;
+    showResult('bibclean-result', data.error || data, false);
+  }
 }
 
 async function runCopyStyles() {

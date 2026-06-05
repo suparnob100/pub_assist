@@ -23,6 +23,7 @@ from pydantic import BaseModel
 sys.path.insert(0, str(Path(__file__).parent / "python_files"))
 
 from beautify import process_all_tex_files as beautify_files
+from bibtex_cleaner import DEFAULT_BIBTEX_TIDY_COMMAND, DEFAULT_SORT_FIELDS, clean_bibtex_file
 from clean_latex import clean_latex
 from collect_figures import collect_figures
 from copy_styles import find_and_copy_latex_style_files
@@ -519,6 +520,57 @@ class Doi2BibRequest(BaseModel):
     pause_seconds: float = 0.2
 
 
+class BibtexCleanRequest(BaseModel):
+    input_bib_file: str
+    output_bib_file: str = ""
+    service: str = "website"
+    command: str = DEFAULT_BIBTEX_TIDY_COMMAND
+    modify_input: bool = False
+    backup: bool = True
+    indent_mode: str = "tab"
+    space_count: int = 2
+    align_values: bool = True
+    align_column: int = 13
+    wrap_values: bool = False
+    wrap_column: int = 80
+    blank_lines: bool = False
+    curly: bool = True
+    enclosing_braces: bool = False
+    enclosing_braces_fields: str = ""
+    remove_braces: bool = False
+    remove_braces_fields: str = ""
+    strip_enclosing_braces: bool = False
+    numeric: bool = True
+    months: bool = False
+    drop_all_caps: bool = False
+    escape: bool = False
+    encode_urls: bool = False
+    remove_empty_fields: bool = False
+    remove_duplicate_fields: bool = False
+    max_authors: bool = False
+    max_authors_count: int = 20
+    sort_entries: bool = False
+    sort_order: str = ""
+    sort_fields: bool = True
+    sort_field_order: str = " ".join(DEFAULT_SORT_FIELDS)
+    check_duplicates: bool = True
+    duplicate_keys: bool = True
+    duplicate_dois: bool = False
+    duplicate_citations: bool = False
+    duplicate_abstracts: bool = False
+    merge_duplicates: bool = False
+    merge_strategy: str = "combine"
+    omit_fields: bool = False
+    omit_field_list: str = ""
+    strip_comments: bool = False
+    tidy_comments: bool = True
+    lowercase: bool = True
+    generate_keys: bool = False
+    generate_key_pattern: str = ""
+    trailing_commas: bool = False
+    extra_options: str = ""
+
+
 def _split_doi_inputs(values):
     for value in values or []:
         for item in str(value or "").replace(",", "\n").splitlines():
@@ -584,6 +636,71 @@ async def api_doi2bib(req: Doi2BibRequest):
                 "bibtex_text": "\n\n".join(bibtex for _, bibtex in entries),
                 "failures": extraction_failures + failures,
             })
+        except Exception as exc:
+            _fail_job(jid, exc)
+
+    asyncio.create_task(_run())
+    return JSONResponse({"status": "running", "job_id": jid})
+
+
+@app.post("/api/bibtex-clean")
+async def api_bibtex_clean(req: BibtexCleanRequest):
+    jid = _new_job()
+
+    async def _run():
+        try:
+            result = await _run_in_pool(
+                clean_bibtex_file,
+                _user_path(req.input_bib_file),
+                _user_path(req.output_bib_file) if req.output_bib_file else "",
+                service=req.service,
+                command=req.command,
+                modify_input=req.modify_input,
+                backup=req.backup,
+                indent_mode=req.indent_mode,
+                space_count=req.space_count,
+                align_values=req.align_values,
+                align_column=req.align_column,
+                wrap_values=req.wrap_values,
+                wrap_column=req.wrap_column,
+                blank_lines=req.blank_lines,
+                curly=req.curly,
+                enclosing_braces=req.enclosing_braces,
+                enclosing_braces_fields=req.enclosing_braces_fields,
+                remove_braces=req.remove_braces,
+                remove_braces_fields=req.remove_braces_fields,
+                strip_enclosing_braces=req.strip_enclosing_braces,
+                numeric=req.numeric,
+                months=req.months,
+                drop_all_caps=req.drop_all_caps,
+                escape=req.escape,
+                encode_urls=req.encode_urls,
+                remove_empty_fields=req.remove_empty_fields,
+                remove_duplicate_fields=req.remove_duplicate_fields,
+                max_authors=req.max_authors,
+                max_authors_count=req.max_authors_count,
+                sort_entries=req.sort_entries,
+                sort_order=req.sort_order,
+                sort_fields=req.sort_fields,
+                sort_field_order=req.sort_field_order,
+                check_duplicates=req.check_duplicates,
+                duplicate_keys=req.duplicate_keys,
+                duplicate_dois=req.duplicate_dois,
+                duplicate_citations=req.duplicate_citations,
+                duplicate_abstracts=req.duplicate_abstracts,
+                merge_duplicates=req.merge_duplicates,
+                merge_strategy=req.merge_strategy,
+                omit_fields=req.omit_fields,
+                omit_field_list=req.omit_field_list,
+                strip_comments=req.strip_comments,
+                tidy_comments=req.tidy_comments,
+                lowercase=req.lowercase,
+                generate_keys=req.generate_keys,
+                generate_key_pattern=req.generate_key_pattern,
+                trailing_commas=req.trailing_commas,
+                extra_options=req.extra_options,
+            )
+            _finish_job(jid, result)
         except Exception as exc:
             _fail_job(jid, exc)
 
