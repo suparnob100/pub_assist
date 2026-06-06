@@ -83,7 +83,7 @@ requirements_app.txt
 
 The app guides you through the full manuscript preparation pipeline: initialize a structured LaTeX project, split a large manuscript into per-section files, format each sentence on its own line for clean Git diffs, reassemble section files into a single document, and run a final beautification pass.
 
-After Step 1 generates a ZIP archive, the app shows an Overleaf handoff panel. Use **Open ZIP Folder** to locate the archive, then **Open Overleaf** and choose **New Project > Upload Project**. Authentication stays in your own browser session.
+In Step 1, choose a destination folder. Pub Assist creates a clean `manuscript/` folder and `manuscript.zip` inside that destination; existing files already in the destination are not included in the ZIP. After Step 1 generates the archive, the app shows an Overleaf handoff panel. Use **Open ZIP Folder** to locate the archive, then **Open Overleaf** and choose **New Project > Upload Project**. Authentication stays in your own browser session.
 
 ### Figure and Float Management
 
@@ -116,6 +116,7 @@ Produces a visual diff between two manuscript versions — additions in blue und
 - Docker failures: confirm Docker Desktop (Windows/macOS) or the Docker daemon (Linux) is running.
 - Perl errors on MiKTeX: install Perl (e.g. Strawberry Perl on Windows) and restart your terminal.
 - Missing `manuscript.tex`: verify `main_tex` matches the filename inside the zip.
+- Huge or corrupt `old.zip`/`new.zip`: make sure the selected old/new inputs are the actual manuscript project folders, not a broad parent folder, and keep the workspace outside both selected project folders. Pub Assist now refuses workspaces nested inside old/new and stops archive creation when the input is unexpectedly large.
 - `PermissionError` on Windows when deleting `latexdiff_runs/current`: Docker, OneDrive, Explorer, or antivirus may be holding the previous `.git` folder. Pub Assist will try to move the old workspace aside automatically; if it fails, close anything using that folder or set a fresh path such as `latexdiff_runs/current_2`.
 - To print build logs, enable `show_build_log = True`.
 

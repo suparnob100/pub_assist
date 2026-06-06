@@ -75,8 +75,9 @@
       </div>
       <div class="card-body">
         <div class="form-row">
-          <label>Project folder path</label>
+          <label>Destination folder</label>
           <input type="text" id="create-dir" placeholder="e.g. /path/to/MyPaper or C:\Projects\MyPaper">
+          <p class="hint">Pub Assist creates a clean <code>manuscript</code> folder and <code>manuscript.zip</code> inside this destination. Existing files already in the destination are not zipped.</p>
         </div>
         <div class="form-row">
           <label>Sections <span class="hint">(comma-separated, leave blank for defaults)</span></label>
@@ -95,7 +96,7 @@
         <div class="overleaf-helper" id="create-overleaf">
           <div class="overleaf-copy">
             <strong>Overleaf upload</strong>
-            <span>Keep <code>Create zip archive</code> checked. After Step 1 creates the ZIP, open the ZIP folder, then in Overleaf choose <code>New Project</code> &gt; <code>Upload Project</code>.</span>
+            <span>Keep <code>Create zip archive</code> checked. Step 1 creates <code>manuscript.zip</code> beside the new <code>manuscript</code> folder; upload that ZIP in Overleaf with <code>New Project</code> &gt; <code>Upload Project</code>.</span>
             <code id="create-zip-path">No ZIP generated yet.</code>
           </div>
           <div class="button-row">
@@ -285,6 +286,7 @@
         <div class="form-row">
           <label>Workspace folder</label>
           <input type="text" id="ld-workspace" value="latexdiff_runs/current">
+          <p class="hint">Keep this outside both old/new project folders. If the workspace is inside a selected project, the generated zip can become huge or corrupt.</p>
         </div>
         <div class="form-row">
           <label>Diff engine</label>

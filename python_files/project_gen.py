@@ -69,16 +69,49 @@ BIB_TEMPLATE = """\
 """
 
 
-def create_project(project_dir, sections=None, appendices=None, zip_result=True):
+def _safe_zip_project(project_path):
+    tmp_base = project_path.parent / f".{project_path.name}_archive_tmp"
+    tmp_zip = tmp_base.with_suffix(".zip")
+    final_zip = project_path.parent / f"{project_path.name}.zip"
+
+    if tmp_zip.exists():
+        tmp_zip.unlink()
+
+    try:
+        archive_path = shutil.make_archive(str(tmp_base), "zip", str(project_path))
+        archive_path = Path(archive_path)
+        os.replace(archive_path, final_zip)
+    except Exception:
+        if tmp_zip.exists():
+            tmp_zip.unlink()
+        raise
+
+    return str(final_zip.resolve())
+
+
+def create_project(project_dir, sections=None, appendices=None, zip_result=True, project_name="manuscript"):
     """
-    Create a structured LaTeX project folder.
+    Create a structured LaTeX project folder inside the selected parent folder.
 
     Returns a dict with keys: project_dir, files_created, zip_path (if zip_result).
     """
     sections = sections or DEFAULT_SECTIONS
     appendices = appendices or DEFAULT_APPENDICES
 
-    project_path = Path(project_dir)
+    parent_path = Path(project_dir).expanduser().resolve()
+    parent_path.mkdir(parents=True, exist_ok=True)
+
+    project_name = str(project_name or "manuscript").strip() or "manuscript"
+    if project_name in {".", ".."} or any(sep in project_name for sep in ("/", "\\")):
+        raise ValueError("project_name must be a simple folder name, such as 'manuscript'.")
+
+    project_path = parent_path / project_name
+    if project_path.exists() and any(project_path.iterdir()):
+        raise FileExistsError(
+            f"Project folder already exists and is not empty: {project_path}\n"
+            "Choose an empty destination folder, or remove/rename the existing manuscript folder."
+        )
+
     sections_path = project_path / "Sections"
     appendices_path = sections_path / "Appendices"
     figures_path = project_path / "Figures"
@@ -117,7 +150,7 @@ def create_project(project_dir, sections=None, appendices=None, zip_result=True)
     result = {"project_dir": str(project_path.resolve()), "files_created": files_created}
 
     if zip_result:
-        zip_path = shutil.make_archive(str(project_path), "zip", str(project_path))
+        zip_path = _safe_zip_project(project_path)
         result["zip_path"] = zip_path
 
     return result

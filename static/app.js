@@ -73,7 +73,7 @@ let createdProjectZipPath = '';
 
 /* ── Open-folder buttons ───────────────────────────────────────────────── */
 const PATH_BUTTONS = {
-  'create-dir': { action: 'select', mode: 'folder', title: 'Select project folder' },
+  'create-dir': { action: 'select', mode: 'folder', title: 'Select destination folder' },
   'mod-folder': { action: 'select', mode: 'folder', title: 'Select project folder' },
   'mod-file': { action: 'select', mode: 'file', fileKind: 'tex', base: 'mod-folder', title: 'Select main .tex file' },
   'os-dir': { action: 'select', mode: 'folder', title: 'Select folder containing .tex files' },

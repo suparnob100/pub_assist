@@ -17,6 +17,21 @@ from pathlib import Path
 DEFAULT_WORKER_IMAGE = "am009/latexdiff-web-worker"
 ONLINE_LATEXDIFF_URL = "https://3142.nl/latex-diff/"
 WORKSPACE_MARKER = ".pub_assist_latexdiff_workspace"
+MAX_PROJECT_ARCHIVE_BYTES = 1024 * 1024 * 1024
+ARCHIVE_EXCLUDED_DIR_NAMES = {
+    ".git",
+    ".hg",
+    ".svn",
+    ".venv",
+    "__pycache__",
+    "latexdiff_runs",
+    "node_modules",
+}
+ARCHIVE_EXCLUDED_FILE_NAMES = {
+    "old.zip",
+    "new.zip",
+    "diff.zip",
+}
 
 DEFAULT_SUBMISSION_STYLE = {
     "new_text": {
@@ -46,17 +61,76 @@ def _as_path(path):
     return Path(path).expanduser().resolve()
 
 
-def _zip_directory(source_dir, target_zip):
+def _is_relative_to(path, parent):
+    try:
+        path.relative_to(parent)
+        return True
+    except ValueError:
+        return False
+
+
+def _is_excluded_archive_path(path, source_dir, target_zip, exclude_roots):
+    if path == target_zip:
+        return True
+    if path.name in ARCHIVE_EXCLUDED_FILE_NAMES:
+        return True
+    if any(_is_relative_to(path, root) for root in exclude_roots):
+        return True
+
+    try:
+        relative_parts = path.relative_to(source_dir).parts
+    except ValueError:
+        return True
+    return any(part in ARCHIVE_EXCLUDED_DIR_NAMES for part in relative_parts[:-1])
+
+
+def _zip_directory(source_dir, target_zip, exclude_roots=None, max_bytes=MAX_PROJECT_ARCHIVE_BYTES):
     source_dir = _as_path(source_dir)
     target_zip = _as_path(target_zip)
+    exclude_roots = [
+        _as_path(root)
+        for root in (exclude_roots or [])
+        if root
+    ]
 
-    with zipfile.ZipFile(target_zip, "w", compression=zipfile.ZIP_DEFLATED) as archive:
-        for path in sorted(source_dir.rglob("*")):
-            if path.is_file():
+    total_bytes = 0
+    files_written = 0
+    tmp_zip = target_zip.with_name(f".{target_zip.name}.tmp")
+    if tmp_zip.exists():
+        tmp_zip.unlink()
+
+    try:
+        with zipfile.ZipFile(tmp_zip, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+            for path in sorted(source_dir.rglob("*")):
+                path = path.resolve()
+                if not path.is_file():
+                    continue
+                if _is_excluded_archive_path(path, source_dir, target_zip, exclude_roots):
+                    continue
+
+                file_size = path.stat().st_size
+                total_bytes += file_size
+                if total_bytes > max_bytes:
+                    raise ValueError(
+                        "Refusing to create a very large LaTeX project archive "
+                        f"({total_bytes / (1024 * 1024):.1f} MB before compression). "
+                        "Check that the selected old/new folders are only manuscript project folders, "
+                        "and keep the latexdiff workspace outside those folders."
+                    )
+
                 archive.write(path, path.relative_to(source_dir).as_posix())
+                files_written += 1
+        _validate_zip_file(tmp_zip)
+        os.replace(tmp_zip, target_zip)
+    except Exception:
+        if tmp_zip.exists():
+            tmp_zip.unlink()
+        raise
+
+    return {"files": files_written, "source_bytes": total_bytes}
 
 
-def _materialize_zip(source, target_zip):
+def _materialize_zip(source, target_zip, exclude_roots=None):
     source_path = _as_path(source)
     target_zip = _as_path(target_zip)
 
@@ -64,13 +138,39 @@ def _materialize_zip(source, target_zip):
         raise FileNotFoundError(f"Input path does not exist: {source_path}")
 
     if source_path.is_dir():
-        _zip_directory(source_path, target_zip)
+        return _zip_directory(source_path, target_zip, exclude_roots=exclude_roots)
     elif source_path.is_file() and source_path.suffix.lower() == ".zip":
-        shutil.copy2(source_path, target_zip)
+        tmp_zip = target_zip.with_name(f".{target_zip.name}.tmp")
+        if tmp_zip.exists():
+            tmp_zip.unlink()
+        try:
+            shutil.copy2(source_path, tmp_zip)
+            _validate_zip_file(tmp_zip)
+            os.replace(tmp_zip, target_zip)
+        except Exception:
+            if tmp_zip.exists():
+                tmp_zip.unlink()
+            raise
+        return {"files": None, "source_bytes": target_zip.stat().st_size}
     else:
         raise ValueError(
             "Input must be a LaTeX project folder or an Overleaf-style .zip file: "
             f"{source_path}"
+        )
+
+
+def _validate_zip_file(zip_path):
+    zip_path = _as_path(zip_path)
+    try:
+        with zipfile.ZipFile(zip_path) as archive:
+            bad_member = archive.testzip()
+    except zipfile.BadZipFile as exc:
+        raise ValueError(f"Created archive is corrupt or not a zip file: {zip_path}") from exc
+
+    if bad_member:
+        raise ValueError(
+            f"Created archive is corrupt: {zip_path}\n"
+            f"First failing member: {bad_member}"
         )
 
 
@@ -397,6 +497,19 @@ def prepare_latexdiff_workspace(
     old_project and new_project can each be either a project folder or a .zip.
     """
     workspace = _as_path(workspace_dir)
+    old_source = _as_path(old_project)
+    new_source = _as_path(new_project)
+
+    for label, source in (("old", old_source), ("new", new_source)):
+        if source.is_dir() and _is_relative_to(workspace, source):
+            raise ValueError(
+                f"The latexdiff workspace is inside the selected {label} project folder.\n\n"
+                f"Workspace: {workspace}\n"
+                f"{label.title()} project: {source}\n\n"
+                "This can make old.zip/new.zip include the workspace or the zip being written, "
+                "creating huge corrupt archives. Choose a workspace outside both project folders, "
+                "for example a sibling folder such as ../latexdiff_runs/current."
+            )
 
     if workspace.exists():
         if not overwrite:
@@ -415,8 +528,10 @@ def prepare_latexdiff_workspace(
     new_zip = workspace / "new.zip"
     config_path = workspace / "config.json"
 
-    _materialize_zip(old_project, old_zip)
-    _materialize_zip(new_project, new_zip)
+    old_archive_info = _materialize_zip(old_source, old_zip, exclude_roots=[workspace])
+    new_archive_info = _materialize_zip(new_source, new_zip, exclude_roots=[workspace])
+    _validate_zip_file(old_zip)
+    _validate_zip_file(new_zip)
     bib = normalize_bib_mode(bib)
     _validate_bibliography_assets(old_zip, new_zip, main_tex, bib)
 
@@ -435,6 +550,10 @@ def prepare_latexdiff_workspace(
         "config_json": str(config_path),
         "config": config,
         "docker_command": docker_worker_command(workspace),
+        "archive_info": {
+            "old": old_archive_info,
+            "new": new_archive_info,
+        },
     }
 
 
