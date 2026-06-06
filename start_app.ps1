@@ -50,5 +50,5 @@ Write-Host " Starting server at http://127.0.0.1:7654"
 Write-Host " Press Ctrl+C to stop."
 Write-Host ""
 
-$uvicornArgs = @($pythonArgs) + @("-m", "uvicorn", "app:app", "--reload", "--host", "127.0.0.1", "--port", "7654")
+$uvicornArgs = @($pythonArgs) + @("-m", "uvicorn", "app:app", "--host", "127.0.0.1", "--port", "7654")
 & $pythonCommand @uvicornArgs

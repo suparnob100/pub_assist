@@ -53,13 +53,15 @@ sh start_app.sh
 **Manual start (after installation):**
 ```bash
 # Windows
-.venv\Scripts\python.exe -m uvicorn app:app --reload --host 127.0.0.1 --port 7654
+.venv\Scripts\python.exe -m uvicorn app:app --host 127.0.0.1 --port 7654
 
 # macOS / Linux
-.venv/bin/python -m uvicorn app:app --reload --host 127.0.0.1 --port 7654
+.venv/bin/python -m uvicorn app:app --host 127.0.0.1 --port 7654
 ```
 
 Then open [http://127.0.0.1:7654](http://127.0.0.1:7654) in your browser.
+
+For normal use, avoid `uvicorn --reload`; long-running jobs create files under the app folder, and reload can interrupt the browser's job polling.
 
 ### App Layout
 

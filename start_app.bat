@@ -33,5 +33,5 @@ echo.
 echo  Starting server at http://127.0.0.1:7654
 echo  Press Ctrl+C to stop.
 echo.
-%PYTHON_CMD% -m uvicorn app:app --reload --host 127.0.0.1 --port 7654
+%PYTHON_CMD% -m uvicorn app:app --host 127.0.0.1 --port 7654
 pause

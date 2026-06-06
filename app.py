@@ -1,6 +1,6 @@
 """
 Pub Assist — local web app.
-Run: uvicorn app:app --reload --port 7654
+Run: uvicorn app:app --port 7654
 """
 import asyncio
 import json
@@ -48,24 +48,152 @@ from texcount_runner import run_texcount
 app = FastAPI(title="Pub Assist")
 _pool = ThreadPoolExecutor(max_workers=4)
 _jobs: dict[str, dict] = {}
+_job_store = Path(__file__).parent / ".pubassist_jobs"
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
-def _new_job():
+def _job_path(jid: str):
+    safe_jid = "".join(ch for ch in str(jid or "") if ch.isalnum() or ch in {"-", "_"})
+    return _job_store / f"{safe_jid}.json"
+
+
+def _save_job(jid: str):
+    job = _jobs.get(jid)
+    if not job:
+        return
+    _job_store.mkdir(parents=True, exist_ok=True)
+    _job_path(jid).write_text(json.dumps(job, indent=2), encoding="utf-8")
+
+
+def _load_job(jid: str):
+    path = _job_path(jid)
+    if not path.is_file():
+        return None
+    try:
+        job = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return None
+    _jobs[jid] = job
+    return job
+
+
+def _update_job(jid: str, **updates):
+    job = _jobs.get(jid) or _load_job(jid)
+    if not job:
+        return
+    for key, value in updates.items():
+        if key == "meta":
+            job.setdefault("meta", {}).update(value or {})
+        else:
+            job[key] = value
+    _save_job(jid)
+
+
+def _latexdiff_artifact_candidates(workspace: Path, main_tex: str):
+    build_dir = workspace / "online-latexdiff" / "build"
+    tex_candidates = [workspace / "diff.tex"]
+    pdf_candidates = [workspace / "diff.pdf"]
+
+    if main_tex:
+        tex_candidates.append(build_dir / main_tex)
+        pdf_candidates.append(build_dir / Path(main_tex).with_suffix(".pdf").name)
+
+    tex_candidates.extend(sorted(build_dir.glob("*.tex")) if build_dir.exists() else [])
+    pdf_candidates.extend(sorted(build_dir.glob("*.pdf")) if build_dir.exists() else [])
+    return tex_candidates, pdf_candidates, build_dir
+
+
+def _first_existing(paths):
+    for path in paths:
+        if path and Path(path).is_file():
+            return Path(path)
+    return None
+
+
+def _recover_latexdiff_job(jid: str, job: dict):
+    if job.get("status") != "running" or job.get("kind") != "latexdiff":
+        return job
+
+    meta = job.get("meta") or {}
+    workspace_raw = meta.get("workspace") or ""
+    if not workspace_raw:
+        return job
+
+    workspace = Path(_user_path(workspace_raw)).expanduser().resolve()
+    if not workspace.exists():
+        return job
+
+    main_tex = meta.get("main_tex") or ""
+    tex_candidates, pdf_candidates, build_dir = _latexdiff_artifact_candidates(workspace, main_tex)
+    diff_tex = _first_existing(tex_candidates)
+    diff_pdf = _first_existing(pdf_candidates)
+
+    if not diff_tex and not diff_pdf:
+        return job
+
+    result = {
+        "returncode": 0,
+        "latexdiff_engine": meta.get("engine", ""),
+        "workspace": str(workspace),
+        "diff_project": str(build_dir) if build_dir.exists() else "",
+        "diff_tex": str(diff_tex) if diff_tex else "",
+        "diff_pdf": str(diff_pdf) if diff_pdf else "",
+        "stdout": "Recovered existing latexdiff artifacts from the workspace after the app job record was interrupted.",
+        "stderr": "",
+        "commands": [],
+    }
+    job["status"] = "done"
+    job["result"] = result
+    job["error"] = None
+    _jobs[jid] = job
+    _save_job(jid)
+    return job
+
+
+def _new_job(kind: str = "", meta: dict | None = None):
     jid = str(uuid.uuid4())[:8]
-    _jobs[jid] = {"status": "running", "started": datetime.now().isoformat(), "result": None, "error": None}
+    _jobs[jid] = {
+        "status": "running",
+        "started": datetime.now().isoformat(),
+        "kind": kind,
+        "meta": meta or {},
+        "result": None,
+        "error": None,
+    }
+    _save_job(jid)
     return jid
 
 
 def _finish_job(jid, result):
+    if jid not in _jobs and not _load_job(jid):
+        _jobs[jid] = {
+            "status": "running",
+            "started": datetime.now().isoformat(),
+            "kind": "",
+            "meta": {},
+            "result": None,
+            "error": None,
+        }
     _jobs[jid]["status"] = "done"
     _jobs[jid]["result"] = result
+    _jobs[jid]["error"] = None
+    _save_job(jid)
 
 
 def _fail_job(jid, exc):
+    if jid not in _jobs and not _load_job(jid):
+        _jobs[jid] = {
+            "status": "running",
+            "started": datetime.now().isoformat(),
+            "kind": "",
+            "meta": {},
+            "result": None,
+            "error": None,
+        }
     _jobs[jid]["status"] = "error"
     _jobs[jid]["error"] = traceback.format_exc()
+    _save_job(jid)
 
 
 async def _run_in_pool(fn, *args, **kwargs):
@@ -99,9 +227,14 @@ async def root():
 
 @app.get("/api/jobs/{jid}")
 async def get_job(jid: str):
-    job = _jobs.get(jid)
+    job = _jobs.get(jid) or _load_job(jid)
     if not job:
-        return _err("Job not found", 404)
+        return _err(
+            "Job not found. The app may have restarted before this job was written. "
+            "If this was a LaTeX diff, check the selected workspace folder for generated artifacts.",
+            404,
+        )
+    job = _recover_latexdiff_job(jid, job)
     return JSONResponse({"status": job["status"], "result": job["result"], "error": job["error"]})
 
 
@@ -458,7 +591,17 @@ class LatexdiffRequest(BaseModel):
 
 @app.post("/api/latexdiff")
 async def api_latexdiff(req: LatexdiffRequest):
-    jid = _new_job()
+    initial_engine = (req.latexdiff_engine or "").lower().strip()
+    if req.use_docker:
+        initial_engine = "docker"
+    jid = _new_job(
+        kind="latexdiff",
+        meta={
+            "workspace": _user_path(req.workspace_dir),
+            "main_tex": req.main_tex,
+            "engine": initial_engine,
+        },
+    )
 
     async def _run():
         try:
@@ -475,6 +618,14 @@ async def api_latexdiff(req: LatexdiffRequest):
                 prepare_latexdiff_workspace,
                 _user_path(req.old_project), _user_path(req.new_project), req.main_tex,
                 _user_path(req.workspace_dir), bib, req.style,
+            )
+            _update_job(
+                jid,
+                meta={
+                    "workspace": ws["workspace"],
+                    "main_tex": req.main_tex,
+                    "engine": engine,
+                },
             )
             if engine == "docker":
                 docker_use_cmd = os.name == "nt" and shutil.which("cmd") is not None
