@@ -4,56 +4,44 @@ A workflow tool for preparing LaTeX manuscripts for journal submission, revision
 
 ---
 
+<a href="https://www.youtube.com/watch?v=HAWj393SHNQ">
+  <img src="https://img.youtube.com/vi/HAWj393SHNQ/maxresdefault.jpg"
+       alt="Watch the video"
+       width="100%">
+</a>
 
-<iframe
-  width="100%"
-  height="250"
-  src="https://www.youtube.com/embed/HAWj393SHNQ"
-  title="YouTube video player"
-  frameborder="0"
-  allowfullscreen>
-</iframe>
+<br><br>
 
+<a href="https://www.youtube.com/watch?v=3OFzK93rzsQ">
+  <img src="https://img.youtube.com/vi/3OFzK93rzsQ/maxresdefault.jpg"
+       alt="Watch the video"
+       width="100%">
+</a>
 
-<iframe
-  width="100%"
-  height="400"
-  src="https://www.youtube.com/watch?v=3OFzK93rzsQ"
-  title="YouTube video player"
-  frameborder="0"
-  allowfullscreen>
-</iframe>
+<br><br>
 
-<iframe
-  width="100%"
-  height="400"
-  src="https://www.youtube.com/watch?v=nuvU6a54aG0"
-  title="YouTube video player"
-  frameborder="0"
-  allowfullscreen>
-</iframe>
+<a href="https://www.youtube.com/watch?v=nuvU6a54aG0">
+  <img src="https://img.youtube.com/vi/nuvU6a54aG0/maxresdefault.jpg"
+       alt="Watch the video"
+       width="100%">
+</a>
 
+<br><br>
 
+<a href="https://www.youtube.com/watch?v=Ri-ZlhLAJt4">
+  <img src="https://img.youtube.com/vi/Ri-ZlhLAJt4/maxresdefault.jpg"
+       alt="Watch the video"
+       width="100%">
+</a>
 
-<iframe
-  width="100%"
-  height="400"
-  src="https://www.youtube.com/watch?v=Ri-ZlhLAJt4"
-  title="YouTube video player"
-  frameborder="0"
-  allowfullscreen>
-</iframe>
+<br><br>
 
+<a href="https://www.youtube.com/watch?v=fPbDnZ9aaPU">
+  <img src="https://img.youtube.com/vi/fPbDnZ9aaPU/maxresdefault.jpg"
+       alt="Watch the video"
+       width="100%">
+</a>
 
-
-<iframe
-  width="100%"
-  height="400"
-  src="https://www.youtube.com/watch?v=fPbDnZ9aaPU"
-  title="YouTube video player"
-  frameborder="0"
-  allowfullscreen>
-</iframe>
 
 
 ## Local Web App
