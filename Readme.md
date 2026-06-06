@@ -2,6 +2,9 @@
 ![alt text](image.png)
 A workflow tool for preparing LaTeX manuscripts for journal submission, revision, and reviewer response. Pub Assist provides a local web app for browser-based access and a set of Jupyter notebooks for cell-by-cell control.
 
+
+Click on the following tutorials:
+
 ---
 
 <a href="https://www.youtube.com/watch?v=HAWj393SHNQ">
