@@ -121,6 +121,12 @@ def create_project(project_dir, sections=None, appendices=None, zip_result=True,
     figures_path.mkdir(parents=True, exist_ok=True)
 
     files_created = []
+    figures_placeholder = figures_path / ".gitkeep"
+    figures_placeholder.write_text(
+        "Placeholder so empty Figures/ folders are preserved in zip uploads.\n",
+        encoding="utf-8",
+    )
+    files_created.append(str(figures_placeholder))
 
     for section in sections:
         p = sections_path / f"{section}.tex"
