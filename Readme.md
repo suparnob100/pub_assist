@@ -4,6 +4,58 @@ A workflow tool for preparing LaTeX manuscripts for journal submission, revision
 
 ---
 
+
+<iframe
+  width="100%"
+  height="250"
+  src="https://www.youtube.com/embed/HAWj393SHNQ"
+  title="YouTube video player"
+  frameborder="0"
+  allowfullscreen>
+</iframe>
+
+
+<iframe
+  width="100%"
+  height="400"
+  src="https://www.youtube.com/watch?v=3OFzK93rzsQ"
+  title="YouTube video player"
+  frameborder="0"
+  allowfullscreen>
+</iframe>
+
+<iframe
+  width="100%"
+  height="400"
+  src="https://www.youtube.com/watch?v=nuvU6a54aG0"
+  title="YouTube video player"
+  frameborder="0"
+  allowfullscreen>
+</iframe>
+
+
+
+<iframe
+  width="100%"
+  height="400"
+  src="https://www.youtube.com/watch?v=Ri-ZlhLAJt4"
+  title="YouTube video player"
+  frameborder="0"
+  allowfullscreen>
+</iframe>
+
+
+
+<iframe
+  width="100%"
+  height="400"
+  src="https://www.youtube.com/watch?v=fPbDnZ9aaPU"
+  title="YouTube video player"
+  frameborder="0"
+  allowfullscreen>
+</iframe>
+
+
 ## Local Web App
 
 ### Installation
@@ -62,6 +114,7 @@ sh start_app.sh
 Then open [http://127.0.0.1:7654](http://127.0.0.1:7654) in your browser.
 
 For normal use, avoid `uvicorn --reload`; long-running jobs create files under the app folder, and reload can interrupt the browser's job polling.
+
 
 ### App Layout
 
